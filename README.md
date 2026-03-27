@@ -3,7 +3,7 @@
 > **Schüler:** *Toni Gugic*  
 > **Klasse / Jahrgang:** *2CHIT*  
 > **Schule:** *TGM*  
-> **Datum:** *[27.03.2026*
+> **Datum:** *27.03.2026*
 
 ---
 
