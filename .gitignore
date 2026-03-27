@@ -1,0 +1,21 @@
+# Secrets – niemals einchecken!
+src/secrets.h
+
+# Arduino build-Ordner
+build/
+*.bin
+*.elf
+*.map
+
+# macOS
+.DS_Store
+
+# Windows
+Thumbs.db
+desktop.ini
+
+# IDE / Editor
+.vscode/
+.idea/
+*.swp
+*.swo
