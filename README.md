@@ -1,7 +1,7 @@
 # 🌡 IoT Wetterstation – SYT Projekt
 
 > **Schüler:** *Toni Gugic*  
-> **Klasse / Jahrgang:** *[2CHIT*  
+> **Klasse / Jahrgang:** *2CHIT*  
 > **Schule:** *TGM*  
 > **Datum:** *27.03.2027*
 
