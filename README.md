@@ -114,11 +114,11 @@ Siehe [`docs/components.md`](docs/components.md) für die vollständige Komponen
 
 ### Schaltplan
 
-> 📷 Schaltplan-Bild: [`images/wiring_diagram.png`](images/wiring_diagram.png)
+>  Schaltplan-Bild: [`images/wiring_diagram.png`](images/wiring_diagram.png)
 
 ### Hardware-Foto
 
-> 📷 Foto des aufgebauten Prototyps: [`images/hardware_photo.jpg`](images/hardware_photo.jpg)
+> Foto von dem Projekt: [`images/hardware_photo.jpg`](images/hardware_photo.jpg)
 
 ---
 
