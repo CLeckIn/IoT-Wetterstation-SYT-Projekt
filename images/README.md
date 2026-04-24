@@ -6,10 +6,10 @@ Dieser Ordner enthält Bilder, die im README und in der Dokumentation referenzie
 
 | Dateiname               | Beschreibung                                         |
 |-------------------------|------------------------------------------------------|
-| `wiring_diagram.png`    | Schaltplan / Verdrahtungsdiagramm (Sender + Empfänger) |
-| `hardware_photo.jpg`    | Foto des aufgebauten Hardware-Prototyps              |
-| `dashboard_screenshot.png` | Screenshot des Web-Dashboards (Dark Mode)         |
-| `telegram_screenshot.png`  | Screenshot der Telegram-Bot-Konversation          |
+| `Schaltplan.png`    | Schaltplan / Verdrahtungsdiagramm (Sender + Empfänger) |
+| `Projekt.jpg`    | Foto des Projekts              |
+| `dashboard.png` | Screenshot des Web-Dashboards        |
+| `telegram.png`  | Screenshot der Telegram-Bot-Konversation          |
 
 ## Hinweise
 
