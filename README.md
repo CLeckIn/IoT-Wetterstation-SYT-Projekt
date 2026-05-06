@@ -23,7 +23,7 @@
 
 ## 1. Einleitung
 
-Dieses Projekt entstand im Rahmen des SYT-Unterrichts (Systemtechnik) und demonstriert eine vollständige IoT-Anwendung mit zwei ESP32-Mikrocontrollern. Ziel war es, ein eingebettetes System zu entwickeln, das Sensordaten kabellos überträgt, visuell anzeigt und über mehrere Schnittstellen (Webseite, Telegram, Smartphone-App) abrufbar macht.
+Dieses Projekt entstand im Rahmen des SYT-Unterrichts (Systemtechnik) und demonstriert eine vollständige IoT-Anwendung mit zwei ESP32-Mikrocontrollern. Ziel war es, ein eingebettetes System zu entwickeln, das Sensordaten kabellos überträgt, visuell anzeigt und über mehrere Schnittstellen (Webseite, Telegram) abrufbar macht.
 
 ---
 
@@ -61,7 +61,7 @@ typedef struct struct_message {
 
 ### ESP-NOW
 
-ESP-NOW ist ein von Espressif entwickeltes Peer-to-Peer-Kommunikationsprotokoll für ESP8266 und ESP32. Es ermöglicht die direkte Datenübertragung zwischen zwei Geräten ohne einen WLAN-Router. Die Übertragung erfolgt auf dem 2,4-GHz-Band mit einer Latenz von wenigen Millisekunden.
+ESP-NOW ist ein von Espressif entwickeltes Peer-to-Peer-Kommunikationsprotokoll für ESP8266 und ESP32. Es ermöglicht die direkte Datenübertragung zwischen zwei Geräten ohne einen WLAN-Router. Die Übertragung erfolgt auf dem 2,4-GHz-Band.
 
 Vorteile gegenüber klassischem WiFi:
 - Sehr geringe Latenz (< 10 ms)
