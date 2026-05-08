@@ -1,7 +1,7 @@
 # IoT Wetterstation – SYT Projekt
 
 > **Schüler:** *Toni Gugic, Luka Milanovic*  
-> **Klasse / Jahrgang:** *2CHIT*  
+> **Klasse:** *2CHIT*  
 > **Schule:** *TGM*  
 > **Datum:** *27.03.2026*
 
