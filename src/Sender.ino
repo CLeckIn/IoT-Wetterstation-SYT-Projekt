@@ -1,174 +1,83 @@
-/**
- * Sender.ino
- *
- * ESP32 Sender – IoT Wetterstation SYT-Projekt
- *
- * Aufgaben:
- *   - Liest Temperatur und Luftdruck vom BMP280-Sensor (I2C)
- *   - Liest den Digitalstatus des LM393-Hallsensors (GPIO)
- *   - Überträgt die Messdaten per ESP-NOW an den Empfänger-ESP32
- *
- * Bibliotheken:
- *   - Adafruit BMP280 (via Arduino Library Manager)
- *   - esp_now.h, WiFi.h (im ESP32-Arduino-Core enthalten)
- *
- * Pinbelegung:
- *   BMP280  SDA  --> GPIO 21
- *   BMP280  SCL  --> GPIO 22
- *   LM393   DO   --> GPIO 34  (nur Eingang, kein Pullup nötig)
- */
-
 #include <esp_now.h>
 #include <WiFi.h>
 #include <Wire.h>
 #include <Adafruit_BMP280.h>
 
-// ---------------------------------------------------------------------------
-// Konfiguration
-// ---------------------------------------------------------------------------
+// --- SLEEP SETTINGS ---
+#define uS_TO_S_FACTOR 1000000ULL 
+#define TIME_TO_SLEEP  15          // Schläft 15 Sekunden für den Test
 
-/**
- * MAC-Adresse des Empfänger-ESP32 (in HEX, ohne Doppelpunkte).
- *
- * WICHTIG: Ersetze diese Broadcast-Platzhalteradresse (0xFF:0xFF:...) durch die
- *          echte MAC-Adresse deines Empfänger-ESP32!
- *          Die MAC wird im Serial Monitor des Empfängers angezeigt (setup()).
- *
- * Beispiel: {0xAB, 0xCD, 0xEF, 0x12, 0x34, 0x56}
- *
- * Hinweis: Die aktuelle Broadcast-Adresse (alle 0xFF) sendet an alle
- *          ESP-NOW-fähigen Geräte in Reichweite und sollte nur zum Testen
- *          verwendet werden.
- */
-static const uint8_t RECEIVER_MAC[6] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
+uint8_t receiverAddress[] = {0x20, 0xE7, 0xC8, 0x67, 0x76, 0xB0}; // MAC prüfen!
+const char* ssid = "Compact";
+const char* password = "kroatien1000";
 
-/** GPIO-Pin des LM393 Digital-Ausgangs */
-static const int PIN_HALL = 34;
+#define I2C_SDA 32
+#define I2C_SCL 33
+#define HALL_PIN 34
 
-/** Sendeintervall in Millisekunden */
-static const uint32_t SEND_INTERVAL_MS = 2000;
+Adafruit_BMP280 bmp;
+typedef struct struct_message { float temp; float press; int hallRaw; bool magnet; } struct_message;
+struct_message myData;
 
-// ---------------------------------------------------------------------------
-// Datenstruktur (muss mit Receiver.ino übereinstimmen)
-// ---------------------------------------------------------------------------
-
-typedef struct struct_message {
-    float temp;      ///< Temperatur in °C
-    float press;     ///< Luftdruck in hPa
-    int   hallRaw;   ///< Rohwert des Hall-Sensors (0 = Magnet erkannt, 1 = kein Magnet)
-    bool  magnet;    ///< true wenn Magnet in der Nähe
-} struct_message;
-
-// ---------------------------------------------------------------------------
-// Globale Variablen
-// ---------------------------------------------------------------------------
-
-static Adafruit_BMP280 bmp;
-static struct_message  payload;
-static bool            peerRegistered = false;
-static uint32_t        lastSendTime   = 0;
-
-// ---------------------------------------------------------------------------
-// ESP-NOW Callback: wird nach jedem Sendeversuch aufgerufen
-// ---------------------------------------------------------------------------
-
-void onDataSent(const uint8_t *mac_addr, esp_now_send_status_t status) {
-    // Callback soll kurz bleiben – nur Status im Serial ausgeben
-    Serial.print("[ESP-NOW] Sendestatus: ");
-    Serial.println(status == ESP_NOW_SEND_SUCCESS ? "OK" : "FEHLER");
+// Callback wenn gesendet wurde (Hier kommt das "Funk: OK")
+void OnDataSent(const wifi_tx_info_t *info, esp_now_send_status_t status) {
+  Serial.print(" >>> Funk-Status: ");
+  Serial.println(status == ESP_NOW_SEND_SUCCESS ? "OK (Empfangen!)" : "FEHLER");
+  
+  // Erst wenn der Status gedruckt wurde, schlafen gehen
+  Serial.println("Gehe jetzt schlafen...");
+  Serial.flush(); 
+  esp_deep_sleep_start();
 }
-
-// ---------------------------------------------------------------------------
-// Setup
-// ---------------------------------------------------------------------------
 
 void setup() {
-    Serial.begin(115200);
-    Serial.println("\n=== Sender ESP32 – IoT Wetterstation ===");
+  Serial.begin(115200);
+  delay(500);
+  Serial.println("\nSENDER WACH");
 
-    // --- Hall-Sensor Pin ---
-    pinMode(PIN_HALL, INPUT);
-
-    // --- BMP280 initialisieren ---
-    Wire.begin();
-    if (!bmp.begin(0x76)) {          // Adresse 0x76 oder 0x77 je nach Modul
-        Serial.println("[FEHLER] BMP280 nicht gefunden! Kabel & Adresse prüfen.");
-        // In einer Endlosschleife blockieren, damit der Fehler sichtbar bleibt
-        while (true) { delay(1000); }
+  // 1. Sensoren lesen (n=10 Mittelwert)
+  Wire.begin(I2C_SDA, I2C_SCL);
+  pinMode(HALL_PIN, INPUT_PULLUP);
+  
+  if (bmp.begin(0x76)) {
+    float t_sum = 0, p_sum = 0;
+    for(int i=0; i<10; i++) {
+      t_sum += bmp.readTemperature();
+      p_sum += bmp.readPressure() / 100.0F;
+      delay(20);
     }
-    // Empfohlene Einstellungen für Wetterstationsbetrieb (Adafruit-Beispiel)
-    bmp.setSampling(Adafruit_BMP280::MODE_NORMAL,
-                    Adafruit_BMP280::SAMPLING_X2,    // Temperatur
-                    Adafruit_BMP280::SAMPLING_X16,   // Druck
-                    Adafruit_BMP280::FILTER_X16,
-                    Adafruit_BMP280::STANDBY_MS_500);
-    Serial.println("[OK] BMP280 initialisiert");
+    myData.temp = t_sum / 10.0;
+    myData.press = p_sum / 10.0;
+  }
+  myData.magnet = (digitalRead(HALL_PIN) == LOW);
 
-    // --- WiFi im Station-Modus (für ESP-NOW benötigt, kein AP nötig) ---
-    WiFi.mode(WIFI_STA);
-    WiFi.disconnect();
-    Serial.print("[INFO] Sender-MAC: ");
-    Serial.println(WiFi.macAddress());
+  // 2. Alles drucken (Temperatur, Druck, Magnet)
+  Serial.printf("MESSUNG: %.2f C | %.1f hPa | Magnet: %d", myData.temp, myData.press, myData.magnet);
 
-    // --- ESP-NOW initialisieren ---
-    if (esp_now_init() != ESP_OK) {
-        Serial.println("[FEHLER] ESP-NOW Init fehlgeschlagen!");
-        while (true) { delay(1000); }
-    }
-    esp_now_register_send_cb(onDataSent);
+  // 3. WiFi & ESP-NOW
+  WiFi.mode(WIFI_STA);
+  WiFi.begin(ssid, password);
+  unsigned long start = millis();
+  while (WiFi.status() != WL_CONNECTED && millis() - start < 5000) { delay(100); }
 
-    // --- Peer (Empfänger) registrieren ---
+  if (esp_now_init() == ESP_OK) {
+    esp_now_register_send_cb(OnDataSent);
     esp_now_peer_info_t peerInfo = {};
-    memcpy(peerInfo.peer_addr, RECEIVER_MAC, 6);
-    peerInfo.channel = 0;   // 0 = aktueller Kanal
+    memcpy(peerInfo.peer_addr, receiverAddress, 6);
+    peerInfo.channel = WiFi.channel(); 
     peerInfo.encrypt = false;
+    esp_now_add_peer(&peerInfo);
+    
+    // Senden auslösen
+    esp_now_send(receiverAddress, (uint8_t *) &myData, sizeof(myData));
+  } else {
+    esp_deep_sleep_start();
+  }
 
-    if (esp_now_add_peer(&peerInfo) != ESP_OK) {
-        Serial.println("[FEHLER] Peer konnte nicht hinzugefügt werden!");
-        while (true) { delay(1000); }
-    }
-    peerRegistered = true;
-    Serial.println("[OK] ESP-NOW bereit");
+  // Falls der Callback nicht kommt, nach 5 Sek trotzdem schlafen
+  esp_sleep_enable_timer_wakeup(TIME_TO_SLEEP * uS_TO_S_FACTOR);
+  delay(5000);
+  esp_deep_sleep_start();
 }
 
-// ---------------------------------------------------------------------------
-// Hauptschleife
-// ---------------------------------------------------------------------------
-
-void loop() {
-    uint32_t now = millis();
-    if (now - lastSendTime < SEND_INTERVAL_MS) {
-        return;  // Noch nicht Zeit für die nächste Messung
-    }
-    lastSendTime = now;
-
-    // --- Sensordaten lesen ---
-    float temperature = bmp.readTemperature();  // °C
-    float pressure    = bmp.readPressure() / 100.0F;  // Pa → hPa
-    int   hallRaw     = digitalRead(PIN_HALL);   // 0 = Magnet aktiv (Low-aktiv)
-    bool  magnet      = (hallRaw == LOW);        // Magnet erkannt wenn LOW
-
-    // Plausibilitätsprüfung: BMP280 liefert bei Ausfall 0 oder NaN
-    if (isnan(temperature) || isnan(pressure) || pressure < 800.0F || pressure > 1100.0F) {
-        Serial.println("[WARNUNG] Ungültige Sensordaten – Paket wird nicht gesendet");
-        return;
-    }
-
-    // --- Payload befüllen ---
-    payload.temp    = temperature;
-    payload.press   = pressure;
-    payload.hallRaw = hallRaw;
-    payload.magnet  = magnet;
-
-    // --- Debug-Ausgabe ---
-    Serial.printf("[MESSUNG] Temp: %.2f°C  |  Druck: %.2f hPa  |  Magnet: %s\n",
-                  temperature, pressure, magnet ? "JA" : "NEIN");
-
-    // --- Senden ---
-    esp_err_t result = esp_now_send(RECEIVER_MAC,
-                                    reinterpret_cast<const uint8_t*>(&payload),
-                                    sizeof(payload));
-    if (result != ESP_OK) {
-        Serial.printf("[FEHLER] esp_now_send: 0x%X\n", result);
-    }
-}
+void loop() {}
