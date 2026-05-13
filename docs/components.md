@@ -50,29 +50,3 @@ Alle verwendeten Bauteile und Materialien für das SYT-Projekt.
 | UniversalTelegramBot    | ≥ 1.3.x   | Telegram-Bot-Integration             |
 | ArduinoJson             | ≥ 6.x     | JSON-Parsing (für Telegram)          |
 | RemoteXY                | ≥ 3.x     | Smartphone-Steuerung via App         |
-
----
-
-## Pinbelegung
-
-### Sender-ESP32
-
-| Pin       | Verbindung               |
-|-----------|--------------------------|
-| GPIO 21   | BMP280 SDA               |
-| GPIO 22   | BMP280 SCL               |
-| GPIO 34   | LM393 DO (Digitalausgang)|
-| 3V3       | BMP280 VCC, LM393 VCC    |
-| GND       | BMP280 GND, LM393 GND    |
-
-### Empfänger-ESP32
-
-| Pin       | Verbindung                         |
-|-----------|------------------------------------|
-| GPIO 25   | LED 1 – Rot (über 220 Ω)           |
-| GPIO 26   | LED 1 – Grün (über 220 Ω)          |
-| GPIO 27   | LED 1 – Blau (über 220 Ω)          |
-| GPIO 14   | LED 2 – Rot (über 220 Ω)           |
-| GPIO 12   | LED 2 – Grün (über 220 Ω)          |
-| GPIO 13   | LED 2 – Blau (über 220 Ω)          |
-| GND       | LED 1 Kathode, LED 2 Kathode       |
