@@ -90,41 +90,19 @@ Die *WiFiManager*-Bibliothek (by tzapu) ermöglicht es, WLAN-Zugangsdaten ohne H
 
 Siehe [`docs/components.md`](docs/components.md) für die vollständige Komponenten- und Kostenliste.
 
-### Pinbelegung Sender
-
-| ESP32-Pin | Verbindung               |
-|-----------|--------------------------|
-| GPIO 21   | BMP280 SDA               |
-| GPIO 22   | BMP280 SCL               |
-| GPIO 34   | LM393 DO (Digitalausgang)|
-| 3V3       | BMP280 VCC, LM393 VCC    |
-| GND       | Gemeinsame Masse         |
-
-### Pinbelegung Empfänger
-
-| ESP32-Pin | Verbindung                     |
-|-----------|--------------------------------|
-| GPIO 25   | LED 1 Rot (220 Ω)              |
-| GPIO 26   | LED 1 Grün (220 Ω)             |
-| GPIO 27   | LED 1 Blau (220 Ω)             |
-| GPIO 14   | LED 2 Rot (220 Ω)              |
-| GPIO 12   | LED 2 Grün (220 Ω)             |
-| GPIO 13   | LED 2 Blau (220 Ω)             |
-| GND       | LED-Kathoden (gemeinsame Masse)|
-
 ### Schaltplan
 
 >  ![Schaltplan der IoT-Wetterstation](./images/Schaltplan.png)
 
 ### Technische Beschreibung des Schaltplans
 
-Der Hardware-Aufbau besteht aus zwei funktional getrennten Einheiten: einer **Sender-Station** zur Messwerterfassung und einer **Empfänger-Station** zur Visualisierung. Die Kommunikation zwischen den beiden ESP32-Mikrocontrollern erfolgt drahtlos über das ESP-NOW Protokoll.
+Der Hardware-Aufbau besteht aus zwei funktional getrennten Einheiten: einer **Sender-Station** zur Messwerterfassung und einer **Empfänger-Station** zur Visualisierung. Die Kommunikation zwischen den beiden Knoten erfolgt kabellos über ESP-NOW.
 
 #### 1. Sender-Station (Sensor-Knoten)
-An der Sender-Station wurden die Sensoren zur Erfassung der Umwelt- und Sicherheitsdaten angebunden. Da die Pins auf der rechten Seite des ESP32 durch das Breadboard verdeckt sind, wurde die gesamte Verkabelung auf der **linken Pin-Leiste** realisiert:
+An der Sender-Station wurden die Sensoren zur Erfassung der Umwelt- und Sicherheitsdaten angebunden. Da die Pins auf der rechten Seite des ESP32 durch das Breadboard verdeckt sind, wurde die gesamte Beschaltung auf die linke Seite (hauptsächlich GPIOs der 30er-Reihe und I2C-Pins) verlegt.
 
-*   **BMP180 (Umweltsensor):** Die Kommunikation erfolgt über den I2C-Bus. Hierbei wurde der Daten-Pin (SDA) an **GPIO 32** und der Takt-Pin (SCL) an **GPIO 33** angeschlossen. Die Spannungsversorgung erfolgt über den 3V3-Pin des Mikrocontrollers.
-*   **Hall-Sensor (Magnetfeld-Simulation):** Zur Simulation eines magnetischen Türkontakts wurde ein Schiebeschalter verwendet. Dieser ist an **GPIO 34** angeschlossen. Durch die Verwendung des internen Pull-Up-Widerstands wird ein definierter Signalzustand gewährleistet.
+*   **BMP180 (Umweltsensor):** Die Kommunikation erfolgt über den I2C-Bus. Hierbei wurde der Daten-Pin (SDA) an **GPIO 32** und der Takt-Pin (SCL) an **GPIO 33** angeschlossen. Die Spannungsversorgung erfolgt regulär über den 3V3-Pin des Mikrocontrollers.
+*   **Hall-Sensor (Magnetfeld-Simulation):** Zur Simulation eines magnetischen Türkontakts wurde ein Schiebeschalter verwendet. Dieser ist an **GPIO 34** angeschlossen. Durch die Verwendung des internen (bzw. externen) Pull-up-Widerstands liefert der Schalter ein klares HIGH/LOW-Signal, das vom ESP32 ausgewertet wird.
 
 #### 2. Empfänger-Station (Basis-Knoten)
 Die Empfänger-Station dient als Gateway und stellt die empfangenen Daten visuell dar. Hierzu wurden zwei RGB-LEDs (Common Cathode) mit entsprechenden Vorwiderständen (220 Ω) integriert:
