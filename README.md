@@ -1,6 +1,6 @@
 # IoT Wetterstation – SYT Projekt
 
-Verfasser: **CLeckIn**
+Verfasser: **CLeckIn** & **lukamlnvc11311**
 
 > **Schule:** *TGM*  
 > **Datum:** *27.03.2026*
