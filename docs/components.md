@@ -76,17 +76,3 @@ Alle verwendeten Bauteile und Materialien für das SYT-Projekt.
 | GPIO 12   | LED 2 – Grün (über 220 Ω)          |
 | GPIO 13   | LED 2 – Blau (über 220 Ω)          |
 | GND       | LED 1 Kathode, LED 2 Kathode       |
-
----
-
-## Kostenabschätzung (ungefähr)
-
-| Bauteil           | Stückpreis (ca.) | Gesamt  |
-|-------------------|------------------|---------|
-| ESP32 DevKit v1   | 5,00 €           | 10,00 € |
-| BMP280-Modul      | 2,50 €           | 2,50 €  |
-| LM393-Modul       | 1,00 €           | 1,00 €  |
-| RGB-LEDs (2×)     | 0,30 €           | 0,60 €  |
-| Widerstände       | 0,05 €           | 0,30 €  |
-| Breadboard + Kabel| 3,00 €           | 3,00 €  |
-| **Gesamt**        |                  | **≈ 17,40 €** |

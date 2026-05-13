@@ -1,7 +1,6 @@
-# 🌡 IoT Wetterstation – SYT Projekt
+# IoT Wetterstation – SYT Projekt
 
-> **Schüler:** *Toni Gugic*  
-> **Klasse / Jahrgang:** *2CHIT*  
+
 > **Schule:** *TGM*  
 > **Datum:** *27.03.2026*
 
@@ -23,7 +22,7 @@
 
 ## 1. Einleitung
 
-Dieses Projekt entstand im Rahmen des SYT-Unterrichts (Systemtechnik) und demonstriert eine vollständige IoT-Anwendung mit zwei ESP32-Mikrocontrollern. Ziel war es, ein eingebettetes System zu entwickeln, das Sensordaten kabellos überträgt, visuell anzeigt und über mehrere Schnittstellen (Webseite, Telegram, Smartphone-App) abrufbar macht.
+Dieses Projekt entstand im Rahmen des SYT-Unterrichts (Systemtechnik) und demonstriert eine vollständige IoT-Anwendung mit zwei ESP32-Mikrocontrollern. Ziel war es, ein eingebettetes System zu entwickeln, das Sensordaten kabellos überträgt, visuell anzeigt und über mehrere Schnittstellen (Webseite, Telegram) abrufbar macht.
 
 ---
 
@@ -53,7 +52,6 @@ typedef struct struct_message {
 * Synchronisiert die Uhrzeit per **NTP**
 * Betreibt ein **Web-Dashboard** (Dark Mode, Port 80)
 * Unterstützt einen **Telegram-Bot** (`/info`-Befehl)
-* Unterstützt **RemoteXY** zur Smartphone-Steuerung
 * Steuert **zwei RGB-LEDs** zur Statusanzeige
 
 ---
@@ -62,7 +60,7 @@ typedef struct struct_message {
 
 ### ESP-NOW
 
-ESP-NOW ist ein von Espressif entwickeltes Peer-to-Peer-Kommunikationsprotokoll für ESP8266 und ESP32. Es ermöglicht die direkte Datenübertragung zwischen zwei Geräten ohne einen WLAN-Router. Die Übertragung erfolgt auf dem 2,4-GHz-Band mit einer Latenz von wenigen Millisekunden.
+ESP-NOW ist ein von Espressif entwickeltes Peer-to-Peer-Kommunikationsprotokoll für ESP8266 und ESP32. Es ermöglicht die direkte Datenübertragung zwischen zwei Geräten ohne einen WLAN-Router. Die Übertragung erfolgt auf dem 2,4-GHz-Band.
 
 Vorteile gegenüber klassischem WiFi:
 - Sehr geringe Latenz (< 10 ms)
@@ -114,11 +112,11 @@ Siehe [`docs/components.md`](docs/components.md) für die vollständige Komponen
 
 ### Schaltplan
 
-> 📷 Schaltplan-Bild: [`images/wiring_diagram.png`](images/wiring_diagram.png)
+>  Schaltplan-Bild: [`Schaltplan`](images/Schaltplan.png)
 
 ### Hardware-Foto
 
-> 📷 Foto des aufgebauten Prototyps: [`images/hardware_photo.jpg`](images/hardware_photo.jpg)
+> Foto von dem Projekt: [`images/hardware_photo.jpg`](images/hardware_photo.jpg)
 
 ---
 
@@ -142,7 +140,7 @@ Siehe [`docs/components.md`](docs/components.md) für die vollständige Komponen
    - WiFiManager (by tzapu)
    - UniversalTelegramBot
    - ArduinoJson (≥ 6.x)
-   - RemoteXY
+    
 
 4. **MAC-Adresse des Empfängers ermitteln**  
    Sketch auf den Empfänger-ESP32 laden, den Serial Monitor öffnen und die angezeigte MAC-Adresse notieren.
@@ -184,8 +182,7 @@ Siehe [`docs/components.md`](docs/components.md) für die vollständige Komponen
 | `handleRoot()`         | Erzeugt dynamisches HTML-Dashboard (Dark Mode) mit aktuellen Sensordaten     |
 | `updateLEDs()`         | Setzt LED 1 und LED 2 basierend auf Magnet- und Temperaturstatus             |
 | `handleTelegramMessages()` | Verarbeitet `/info`- und `/start`-Befehle des Telegram-Bots             |
-| `setup()`              | WiFiManager, NTP, Webserver, Telegram, RemoteXY und ESP-NOW werden initialisiert |
-| `loop()`               | Abwechselndes Abarbeiten von Webserver, RemoteXY, LED-Update, Telegram       |
+| `loop()`               | Abwechselndes Abarbeiten von Webserver, LED-Update, Telegram       |
 
 **Wichtige Robustheits-Maßnahme:** Der ESP-NOW-Callback prüft `len == sizeof(struct_message)` bevor `memcpy` aufgerufen wird. Pakete falscher Größe werden verworfen.
 
@@ -201,9 +198,9 @@ Siehe [`docs/components.md`](docs/components.md) für die vollständige Komponen
                     ▼               ▼               ▼
               [Webserver]     [Telegram Bot]   [RGB LEDs]
                 (Port 80)       (/info)        (Status)
-                    │
-                    ▼
-              [RemoteXY App]
+                    
+                    
+            
 ```
 
 ---
@@ -249,7 +246,7 @@ Siehe [`docs/components.md`](docs/components.md) für die vollständige Komponen
 
 ## 9. Zusammenfassung
 
-In diesem Projekt wurde eine vollständige IoT-Wetterstation mit zwei ESP32-Mikrocontrollern entwickelt. Der Sender erfasst Temperatur, Luftdruck und Magnetstatus und überträgt die Daten drahtlos per ESP-NOW. Der Empfänger verarbeitet die Daten, stellt sie über ein Web-Dashboard bereit, ermöglicht Telegram-Abfragen, RemoteXY-Steuerung und zeigt den Systemstatus über RGB-LEDs an.
+In diesem Projekt wurde eine vollständige IoT-Wetterstation mit zwei ESP32-Mikrocontrollern entwickelt. Der Sender erfasst Temperatur, Luftdruck und Magnetstatus und überträgt die Daten drahtlos per ESP-NOW. Der Empfänger verarbeitet die Daten, stellt sie über ein Web-Dashboard bereit, ermöglicht Telegram-Abfragen und zeigt den Systemstatus über RGB-LEDs an.
 
 Das Projekt demonstriert praxisrelevante Konzepte der eingebetteten Systemtechnik:
 - Drahtlose Kommunikation (ESP-NOW)
@@ -257,32 +254,3 @@ Das Projekt demonstriert praxisrelevante Konzepte der eingebetteten Systemtechni
 - Netzwerkdienste (WiFi, NTP, HTTP)
 - Sichere Konfigurationsverwaltung (Secrets-Datei, .gitignore)
 - Robuste Fehlerbehandlung (Paketgrößenvalidierung, Plausibilitätsprüfung)
-
----
-
-## Lizenz
-
-Dieses Projekt ist für Bildungszwecke freigegeben.  
-Quellcode und Dokumentation dürfen für schulische Arbeiten verwendet und verändert werden.
-
----
-
-## Repository-Struktur
-
-```
-IoT-Wetterstation-SYT-Projekt/
-├── README.md                    ← Diese Datei
-├── .gitignore                   ← Schließt secrets.h aus
-├── src/
-│   ├── Sender.ino               ← Sender-Sketch (BMP280 + LM393 + ESP-NOW)
-│   ├── Receiver.ino             ← Empfänger-Sketch (Web, Telegram, LEDs)
-│   └── secrets.h.example        ← Vorlage für Zugangsdaten
-├── images/
-│   ├── README.md                ← Anleitung für Bilder
-│   ├── wiring_diagram.png       ← Schaltplan (bitte hinzufügen)
-│   ├── hardware_photo.jpg       ← Hardwarefoto (bitte hinzufügen)
-│   ├── dashboard_screenshot.png ← Dashboard (bitte hinzufügen)
-│   └── telegram_screenshot.png  ← Telegram (bitte hinzufügen)
-└── docs/
-    └── components.md            ← Komponenten- und Kostenliste
-```
