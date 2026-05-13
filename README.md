@@ -1,5 +1,6 @@
 # IoT Wetterstation – SYT Projekt
 
+Verfasser: **CLeckIn**
 
 > **Schule:** *TGM*  
 > **Datum:** *27.03.2026*
@@ -17,6 +18,7 @@
 7. [LED-Logik](#7-led-logik)
 8. [Mögliche Verbesserungen](#8-mögliche-verbesserungen)
 9. [Zusammenfassung](#9-zusammenfassung)
+10. [Quellen](#10-quellen)
 
 ---
 
@@ -70,7 +72,7 @@ Vorteile gegenüber klassischem WiFi:
 
 ### BMP280
 
-Der *Bosch BMP280* ist ein digitaler Umgebungssensor, der Temperatur (−40 bis +85 °C) und absoluten Luftdruck (300–1100 hPa) misst. Die Kommunikation erfolgt über I²C oder SPI. Im Projekt wird die I²C-Variante mit der Adafruit-Bibliothek verwendet.
+Der *Bosch BMP280* ist ein digitaler Umgebungssensor, der Temperatur (−40 bis +85 °C) und absolute Luftdruck (300–1100 hPa) misst. Die Kommunikation erfolgt über I²C oder SPI. Im Projekt wird die I²C-Variante mit der Adafruit-Bibliothek verwendet.
 
 ### LM393 Hallsensor
 
@@ -254,3 +256,13 @@ Das Projekt demonstriert praxisrelevante Konzepte der eingebetteten Systemtechni
 - Netzwerkdienste (WiFi, NTP, HTTP)
 - Sichere Konfigurationsverwaltung (Secrets-Datei, .gitignore)
 - Robuste Fehlerbehandlung (Paketgrößenvalidierung, Plausibilitätsprüfung)
+
+---
+
+## 10. Quellen
+
+[1] Espressif Systems, "ESP-NOW," *Espressif Docs*. [online]. Available at: https://docs.espressif.com/projects/esp-idf/en/latest/esp32/api-reference/network/esp_now.html. [Accessed 13 May 2026].
+
+[2] Bosch Sensortec, "BMP280 Digital Pressure Sensor," *Bosch Sensortec*. [online]. Available at: https://www.bosch-sensortec.com/products/environmental-sensors/pressure-sensors/bmp280/. [Accessed 13 May 2026].
+
+[3] tzapu, "WiFiManager," *GitHub*. [online]. Available at: https://github.com/tzapu/WiFiManager. [Accessed 13 May 2026].
