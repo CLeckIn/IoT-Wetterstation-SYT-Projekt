@@ -49,4 +49,3 @@ Alle verwendeten Bauteile und Materialien für das SYT-Projekt.
 | WiFiManager (tzapu)     | ≥ 2.0.x   | Auto-WLAN-Konfigurationsportal       |
 | UniversalTelegramBot    | ≥ 1.3.x   | Telegram-Bot-Integration             |
 | ArduinoJson             | ≥ 6.x     | JSON-Parsing (für Telegram)          |
-| RemoteXY                | ≥ 3.x     | Smartphone-Steuerung via App         |
