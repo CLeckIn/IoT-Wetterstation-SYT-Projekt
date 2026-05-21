@@ -223,8 +223,10 @@ Die Empfänger-Station dient als Gateway und stellt die empfangenen Daten visuel
 | Temperatur niedrig (< 18 °C)     | 🩵 Cyan (Blau + Grün)  |
 | Sender seit > 10 s offline       | 🟠 Orange (blinkend)   |
 
+
 > 📷 Dashboard-Screenshot: [`images/dashboard_screenshot.png`](images/dashboard_screenshot.png)  
-> 📱 Telegram-Screenshot: [`images/telegram_screenshot.png`](images/telegram.png)
+> 📱 Telegram-Screenshot: ![Telegram](images/telegram.png)
+## Mit /info werden die Daten der Wetterstation angezeigt.
 
 ---
 
