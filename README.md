@@ -224,7 +224,7 @@ Die Empfänger-Station dient als Gateway und stellt die empfangenen Daten visuel
 | Sender seit > 10 s offline       | 🟠 Orange (blinkend)   |
 
 > 📷 Dashboard-Screenshot: [`images/dashboard_screenshot.png`](images/dashboard_screenshot.png)  
-> 📱 Telegram-Screenshot: [`images/telegram_screenshot.png`](images/telegram_screenshot.png)
+> 📱 Telegram-Screenshot: [`images/telegram_screenshot.png`](images/telegram.png)
 
 ---
 
