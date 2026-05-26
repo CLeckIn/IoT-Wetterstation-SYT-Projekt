@@ -14,10 +14,10 @@ Alle verwendeten Bauteile und Materialien für das SYT-Projekt.
 
 ## Sensoren
 
-| Anzahl | Bezeichnung           | Schnittstelle | Beschreibung                              |
-|--------|-----------------------|---------------|-------------------------------------------|
-| 1×     | **BMP280**            | I2C (0x76)    | Temperatur- & Luftdrucksensor             |
-| 1×     | **LM393 Hallsensor**  | Digital (DO)  | Erkennt Magnetfelder; Digitalausgang Low-aktiv |
+| Anzahl | Bezeichnung           | Beschreibung                              |
+|--------|-----------------------|-------------------------------------------|
+| 1×     | **BMP280**            | Temperatur- & Luftdrucksensor             |
+| 1×     | **LM393 Hallsensor**  | Erkennt Magnetfelder                      |
 
 ---
 
