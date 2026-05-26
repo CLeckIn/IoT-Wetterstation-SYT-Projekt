@@ -31,7 +31,7 @@ typedef struct struct_message {
 * Empfängt die ESP-NOW-Datenpakete
 * Verbindet sich mit WLAN (Auto-Konfiguration via **WiFiManager**)
 * Synchronisiert die Uhrzeit per **NTP**
-* Betreibt ein **Web-Dashboard** (Dark Mode, Port 80)
+* Betreibt ein **Web-Dashboard** (Port 80)
 * Unterstützt einen **Telegram-Bot** (`/info`-Befehl)
 * Steuert **zwei RGB-LEDs** zur Statusanzeige
 
@@ -149,7 +149,7 @@ Die *WiFiManager*-Bibliothek (by tzapu) ermöglicht es, WLAN-Zugangsdaten ohne H
 | Abschnitt              | Erklärung                                                                    |
 |------------------------|------------------------------------------------------------------------------|
 | `OnDataRecv()`         | ESP-NOW Callback – kopiert Daten in incomingData und setzt Zeitstempel       |
-| `handleRoot()`         | Erzeugt dynamisches HTML-Dashboard (Dark Mode) mit aktuellen Sensordaten     |
+| `handleRoot()`         | Erzeugt dynamisches HTML-Dashboard mit aktuellen Sensordaten                 |
 | `updateLEDs()`         | Setzt LED 1 und LED 2 basierend auf Magnet- und Temperaturstatus             |
 | `handleNewMessages()`  | Verarbeitet `/info`-Befehle des Telegram-Bots                                |
 | `loop()`               | Abarbeiten von Webserver, LED-Update und Telegram-Abfrage                    |
@@ -185,7 +185,6 @@ Die *WiFiManager*-Bibliothek (by tzapu) ermöglicht es, WLAN-Zugangsdaten ohne H
 |-----------|------|-------------|
 | Port | `80` | HTTP-Port für Web-Dashboard |
 | Auto-Refresh | `5` Sekunden | Dashboard aktualisiert sich automatisch |
-| Design | Dark Mode | Dunkles Design mit CSS-Styling |
 
 **Telegram Bot**
 
