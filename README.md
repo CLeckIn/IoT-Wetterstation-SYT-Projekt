@@ -1,6 +1,6 @@
 # IoT Wetterstation – SYT Projekt
 
-Verfasser: **CLeckIn** & **lukamlnvc11311**
+Verfasser: **Toni Gugic** & **Luka Milanovic**
 
 Datum: **27.06.2026**
 
