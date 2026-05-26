@@ -217,23 +217,19 @@ Die *WiFiManager*-Bibliothek (by tzapu) ermöglicht es, WLAN-Zugangsdaten ohne H
 
 ![Schaltplan der IoT-Wetterstation](./images/Schaltplan.png)
 
-### Technische Beschreibung des Schaltplans
-
-Der Hardware-Aufbau besteht aus zwei funktional getrennten Einheiten: einer **Sender-Station** zur Messwerterfassung und einer **Empfänger-Station** zur Visualisierung. Die Kommunikation zwischen den beiden Knoten erfolgt kabellos über ESP-NOW.
-
-1. Sender-Station
-    An der Sender-Station wurden die Sensoren zur Erfassung der Umwelt- und Sicherheitsdaten angebunden. Da die Pins auf der rechten Seite des ESP32 durch das Breadboard verdeckt sind, wurde die gesamte Beschaltung auf die linke Seite verlegt.
+1. Sender-Station 
+    An der Sender-Station wurden die Sensoren zur Erfassung der Umwelt- und Sicherheitsdaten angebunden. Da die Pins auf der rechten Seite des ESP32 durch das Breadboard verdeckt sind, wurde die gesamte Beschaltung auf die **linke Pin-Leiste** verlegt.
     
-    *   **BMP280 (Umweltsensor):** Die Kommunikation erfolgt über den I2C-Bus. Hierbei wurde der Daten-Pin (SDA) an **GPIO 32** und der Takt-Pin (SCL) an **GPIO 33** angeschlossen. Die Spannungsversorgung erfolgt über den 3V3-Pin des Mikrocontrollers.
-    *   **Hall-Sensor (Magnetfeld-Simulation):** Ein Hallsensor ist an **GPIO 34** angeschlossen. Das Modul liefert ein digitales Signal, das vom ESP32 ausgewertet wird.
+    *   **BMP280 (Umweltsensor):** Die Kommunikation erfolgt über den I2C-Bus. Hierbei wurde der Daten-Pin (SDA) an **GPIO 32** und der Takt-Pin (SCL) an **GPIO 33** angeschlossen. Die Spannungsversorgung erfolgt über den **3V3-Pin** des Mikrocontrollers.
+    *   **Hall-Sensor (Magnetfeld-Simulation):** Zur Simulation des Magnetsensors wurde ein Schalter verwendet, der an **GPIO 34** angeschlossen ist. Das Modul liefert ein digitales Signal, welches vom ESP32 im Modus `INPUT_PULLUP` ausgewertet wird.
 
-2. Empfänger-Station
-    Die Empfänger-Station dient als Gateway und stellt die empfangenen Daten visuell dar. Hierzu wurden zwei RGB-LEDs (Common Cathode) mit entsprechenden Vorwiderständen (220 Ω) integriert:
+2. Empfänger-Station 
+    Die Empfänger-Station dient als Gateway und stellt die empfangenen Daten visuell dar. Hierzu wurden zwei RGB-LEDs (Common Cathode) mit entsprechenden Vorwiderständen (220 Ω) integriert, die ebenfalls an der **linken Pin-Leiste** angeschlossen sind:
     
     *   **LED 1 (Magnet-Status):** Diese LED signalisiert den Zustand des Hall-Sensors am Sender. Sie ist an den Pins **GPIO 25 (Rot)** und **GPIO 26 (Grün)** angebunden.
     *   **LED 2 (System-Status):** Zur Anzeige der Temperaturwarnungen und Kommunikationsfehler wurden die Pins **GPIO 13 (Rot)** und **GPIO 14 (Blau)** verwendet. 
-    *   **Masseverbindung:** Alle Kathoden der LEDs sowie die Sensoren sind mit dem gemeinsamen Masse-Potenzial (GND) des jeweiligen ESP32 verbunden.
-
+    *   **Masseverbindung:** Alle Kathoden (COM) der LEDs sowie die Massepins der Sensoren sind mit dem gemeinsamen Masse-Potenzial (**GND**) des jeweiligen ESP32 verbunden.
+    
 **Dashboard-Screenshot:**
 
 ![Dashboard](images/dashboard_screenshot.png)  
