@@ -36,15 +36,3 @@ Alle verwendeten Bauteile und Materialien für das SYT-Projekt.
 |--------|--------------------------|----------------------------------|
 | 2×     | **Breadboard**           | Steckplatine für den Prototypen  |
 | 2×     | **USB-Kabel**            | Stromversorgung / Programmierung |
-
----
-
-## Software / Bibliotheken
-
-| Bibliothek              | Version   | Verwendung                           |
-|-------------------------|-----------|--------------------------------------|
-| Arduino ESP32 Core      | ≥ 2.0.x   | ESP32 Board-Support                  |
-| Adafruit BMP280         | ≥ 2.6.x   | BMP280-Sensor-Treiber                |
-| WiFiManager (tzapu)     | ≥ 2.0.x   | Auto-WLAN-Konfigurationsportal       |
-| UniversalTelegramBot    | ≥ 1.3.x   | Telegram-Bot-Integration             |
-| ArduinoJson             | ≥ 6.x     | JSON-Parsing (für Telegram)          |
