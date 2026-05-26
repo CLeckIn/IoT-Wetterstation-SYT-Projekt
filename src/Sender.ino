@@ -1,83 +1,148 @@
 #include <esp_now.h>
 #include <WiFi.h>
+#include <esp_wifi.h>
 #include <Wire.h>
 #include <Adafruit_BMP280.h>
 
-// --- SLEEP SETTINGS ---
-#define uS_TO_S_FACTOR 1000000ULL 
-#define TIME_TO_SLEEP  15          // Schläft 15 Sekunden für den Test
+#define uS_TO_S_FACTOR 1000000ULL
+#define TIME_TO_SLEEP 15
 
-uint8_t receiverAddress[] = {0x20, 0xE7, 0xC8, 0x67, 0x76, 0xB0}; // MAC prüfen!
-const char* ssid = "Compact";
-const char* password = "kroatien1000";
+uint8_t receiverAddress[] = {
+  0x20, 0xE7, 0xC8,
+  0x67, 0x76, 0xB0
+};
 
 #define I2C_SDA 32
 #define I2C_SCL 33
 #define HALL_PIN 34
 
 Adafruit_BMP280 bmp;
-typedef struct struct_message { float temp; float press; int hallRaw; bool magnet; } struct_message;
+
+typedef struct struct_message {
+  float temp;
+  float press;
+  bool magnet;
+} struct_message;
+
 struct_message myData;
 
-// Callback wenn gesendet wurde (Hier kommt das "Funk: OK")
-void OnDataSent(const wifi_tx_info_t *info, esp_now_send_status_t status) {
-  Serial.print(" >>> Funk-Status: ");
-  Serial.println(status == ESP_NOW_SEND_SUCCESS ? "OK (Empfangen!)" : "FEHLER");
-  
-  // Erst wenn der Status gedruckt wurde, schlafen gehen
-  Serial.println("Gehe jetzt schlafen...");
-  Serial.flush(); 
+void OnDataSent(
+  const wifi_tx_info_t *info,
+  esp_now_send_status_t status
+) {
+
+  Serial.print("Sende Status: ");
+
+  if(status == ESP_NOW_SEND_SUCCESS) {
+    Serial.println("OK");
+  } else {
+    Serial.println("FEHLER");
+  }
+
+  Serial.println("Deep Sleep startet...");
+
+  delay(1000);
+
+  esp_sleep_enable_timer_wakeup(
+    TIME_TO_SLEEP * uS_TO_S_FACTOR
+  );
+
   esp_deep_sleep_start();
 }
 
 void setup() {
+
   Serial.begin(115200);
-  delay(500);
-  Serial.println("\nSENDER WACH");
 
-  // 1. Sensoren lesen (n=10 Mittelwert)
+  delay(1000);
+
+  Serial.println("\n===== SENDER WACH =====");
+
+  pinMode(HALL_PIN, INPUT);
+
   Wire.begin(I2C_SDA, I2C_SCL);
-  pinMode(HALL_PIN, INPUT_PULLUP);
-  
+
   if (bmp.begin(0x76)) {
-    float t_sum = 0, p_sum = 0;
-    for(int i=0; i<10; i++) {
-      t_sum += bmp.readTemperature();
-      p_sum += bmp.readPressure() / 100.0F;
-      delay(20);
-    }
-    myData.temp = t_sum / 10.0;
-    myData.press = p_sum / 10.0;
-  }
-  myData.magnet = (digitalRead(HALL_PIN) == LOW);
 
-  // 2. Alles drucken (Temperatur, Druck, Magnet)
-  Serial.printf("MESSUNG: %.2f C | %.1f hPa | Magnet: %d", myData.temp, myData.press, myData.magnet);
+    Serial.println("BMP280 gefunden");
 
-  // 3. WiFi & ESP-NOW
-  WiFi.mode(WIFI_STA);
-  WiFi.begin(ssid, password);
-  unsigned long start = millis();
-  while (WiFi.status() != WL_CONNECTED && millis() - start < 5000) { delay(100); }
+    myData.temp =
+      bmp.readTemperature();
 
-  if (esp_now_init() == ESP_OK) {
-    esp_now_register_send_cb(OnDataSent);
-    esp_now_peer_info_t peerInfo = {};
-    memcpy(peerInfo.peer_addr, receiverAddress, 6);
-    peerInfo.channel = WiFi.channel(); 
-    peerInfo.encrypt = false;
-    esp_now_add_peer(&peerInfo);
-    
-    // Senden auslösen
-    esp_now_send(receiverAddress, (uint8_t *) &myData, sizeof(myData));
+    myData.press =
+      bmp.readPressure() / 100.0F;
+
   } else {
-    esp_deep_sleep_start();
+
+    Serial.println("BMP280 NICHT gefunden");
+
+    myData.temp = 0;
+    myData.press = 0;
   }
 
-  // Falls der Callback nicht kommt, nach 5 Sek trotzdem schlafen
-  esp_sleep_enable_timer_wakeup(TIME_TO_SLEEP * uS_TO_S_FACTOR);
-  delay(5000);
-  esp_deep_sleep_start();
+  // Magnet erkannt = LOW
+  myData.magnet =
+    (digitalRead(HALL_PIN) == LOW);
+
+  Serial.print("Temp: ");
+  Serial.print(myData.temp);
+
+  Serial.print(" C | Druck: ");
+  Serial.print(myData.press);
+
+  Serial.print(" hPa | Magnet: ");
+  Serial.println(myData.magnet);
+
+  WiFi.mode(WIFI_STA);
+
+  esp_wifi_set_channel(
+    11,
+    WIFI_SECOND_CHAN_NONE
+  );
+
+  if (esp_now_init() != ESP_OK) {
+
+    Serial.println("ESP NOW Fehler");
+    return;
+  }
+
+  esp_now_register_send_cb(OnDataSent);
+
+  esp_now_peer_info_t peerInfo = {};
+
+  memcpy(
+    peerInfo.peer_addr,
+    receiverAddress,
+    6
+  );
+
+  peerInfo.channel = 11;
+  peerInfo.encrypt = false;
+
+  if (
+    esp_now_add_peer(&peerInfo)
+    != ESP_OK
+  ) {
+
+    Serial.println("Peer Fehler");
+    return;
+  }
+
+  Serial.println("Senden gestartet");
+
+  esp_err_t result =
+    esp_now_send(
+      receiverAddress,
+      (uint8_t *) &myData,
+      sizeof(myData)
+    );
+
+  if(result != ESP_OK) {
+
+    Serial.println("Sende Fehler");
+  }
 }
 
-void loop() {}
+void loop() {
+
+}
