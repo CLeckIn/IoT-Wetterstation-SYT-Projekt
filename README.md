@@ -79,7 +79,7 @@ Die *WiFiManager*-Bibliothek (by tzapu) ermöglicht es, WLAN-Zugangsdaten ohne H
 
 ## 4. Arbeitsschritte
 
-1. **Checken ob alle physische [Komponenten](.docs/components.md) vorhanden sind**
+1. **Checken ob alle physikalischen [Komponenten](.docs/components.md) vorhanden sind**
 
 2. **New Sketch in der Arduino IDE**
 
