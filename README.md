@@ -2,31 +2,11 @@
 
 Verfasser: **CLeckIn** & **lukamlnvc11311**
 
-> **Schule:** *TGM*  
-> **Datum:** *27.03.2026*
+Datum: **27.06.2026**
 
----
-
-## Inhaltsverzeichnis
-
-1. [Einleitung](#1-einleitung)
-2. [Projektbeschreibung](#2-projektbeschreibung)
-3. [Theorie](#3-theorie)
-4. [Hardware-Aufbau](#4-hardware-aufbau)
-5. [Arbeitsschritte](#5-arbeitsschritte)
-6. [Code-Erklärung](#6-code-erklärung)
-7. [LED-Logik](#7-led-logik)
-8. [Mögliche Verbesserungen](#8-mögliche-verbesserungen)
-9. [Zusammenfassung](#9-zusammenfassung)
-10. [Quellen](#10-quellen)
-
----
-
-## 1. Einleitung
+## 1. Einführung
 
 Dieses Projekt entstand im Rahmen des SYT-Unterrichts (Systemtechnik) und demonstriert eine vollständige IoT-Anwendung mit zwei ESP32-Mikrocontrollern. Ziel war es, ein eingebettetes System zu entwickeln, das Sensordaten kabellos überträgt, visuell anzeigt und über mehrere Schnittstellen (Webseite, Telegram) abrufbar macht.
-
----
 
 ## 2. Projektbeschreibung
 
@@ -56,8 +36,6 @@ typedef struct struct_message {
 * Unterstützt einen **Telegram-Bot** (`/info`-Befehl)
 * Steuert **zwei RGB-LEDs** zur Statusanzeige
 
----
-
 ## 3. Theorie
 
 ### ESP-NOW
@@ -82,78 +60,64 @@ Das LM393-Modul enthält einen Halleffekt-Sensor und einen Komparatorchip. Der D
 
 Die *WiFiManager*-Bibliothek (by tzapu) ermöglicht es, WLAN-Zugangsdaten ohne Hardcodierung zu konfigurieren. Bei der ersten Inbetriebnahme (oder wenn das gespeicherte Netzwerk nicht erreichbar ist) öffnet der ESP32 einen eigenen WLAN-Accesspoint mit einem Konfigurationsportal. Der Nutzer verbindet sich damit und gibt die Zugangsdaten ein.
 
----
+### LED 1 – Magnetstatus
 
-## 4. Hardware-Aufbau
+| Zustand               | Farbe          |
+|-----------------------|----------------|
+| Magnet erkannt        | 🟢 Grün         |
+| Kein Magnet           | 🔴 Rot          |
+| Sender offline        | 🔴 Rot          |
 
-### Benötigte Bauteile
+### LED 2 – Systemstatus
 
-Siehe [`docs/components.md`](docs/components.md) für die vollständige Komponentenliste.
+| Zustand                          | Farbe                  |
+|----------------------------------|------------------------|
+| Temperatur normal (18–28 °C)     | 🔵 Blau                |
+| Temperatur hoch (> 28 °C)        | 🔴 Rot                 |
+| Temperatur niedrig (< 18 °C)     | 🩵 Cyan (Blau + Grün)  |
+| Sender seit > 10 s offline       | 🟠 Orange (blinkend)   |
 
-### Schaltplan
+## 4. Arbeitsschritte
 
->  ![Schaltplan der IoT-Wetterstation](./images/Schaltplan.png)
+1. **New Sketch in der Arduino IDE**
 
-### Technische Beschreibung des Schaltplans
-
-Der Hardware-Aufbau besteht aus zwei funktional getrennten Einheiten: einer **Sender-Station** zur Messwerterfassung und einer **Empfänger-Station** zur Visualisierung. Die Kommunikation zwischen den beiden Knoten erfolgt kabellos über ESP-NOW.
-
-#### 1. Sender-Station 
-An der Sender-Station wurden die Sensoren zur Erfassung der Umwelt- und Sicherheitsdaten angebunden. Da die Pins auf der rechten Seite des ESP32 durch das Breadboard verdeckt sind, wurde die gesamte Beschaltung auf die linke Seite (hauptsächlich GPIOs der 30er-Reihe und I2C-Pins) verlegt.
-
-*   **BMP180 (Umweltsensor):** Die Kommunikation erfolgt über den I2C-Bus. Hierbei wurde der Daten-Pin (SDA) an **GPIO 32** und der Takt-Pin (SCL) an **GPIO 33** angeschlossen. Die Spannungsversorgung erfolgt regulär über den 3V3-Pin des Mikrocontrollers.
-*   **Hall-Sensor (Magnetfeld-Simulation):** Zur Simulation eines magnetischen Türkontakts wurde ein Schiebeschalter verwendet. Dieser ist an **GPIO 34** angeschlossen. Durch die Verwendung des internen (bzw. externen) Pull-up-Widerstands liefert der Schalter ein klares HIGH/LOW-Signal, das vom ESP32 ausgewertet wird.
-
-#### 2. Empfänger-Station
-Die Empfänger-Station dient als Gateway und stellt die empfangenen Daten visuell dar. Hierzu wurden zwei RGB-LEDs (Common Cathode) mit entsprechenden Vorwiderständen (220 Ω) integriert:
-
-*   **LED 1 (Magnet-Status):** Diese LED signalisiert den Zustand des Hall-Sensors am Sender. Sie ist an den Pins **GPIO 25 (Rot)**, **GPIO 26 (Grün)** und **GPIO 27 (Blau)** angebunden.
-*   **LED 2 (System-Status):** Zur Anzeige der Temperaturwarnungen und Kommunikationsfehler wurden die Pins **GPIO 13 (Rot)** und **GPIO 14 (Blau)** verwendet. 
-*   **Masseverbindung:** Alle Kathoden der LEDs sowie die Sensoren sind mit dem gemeinsamen Masse-Potenzial (GND) des jeweiligen ESP32 verbunden.
-
----
-
-### Hardware-Foto
-
-> Foto von dem Projekt: [`images/hardware_photo.jpg`](images/hardware_photo.jpg)
-
----
-
-## 5. Arbeitsschritte
-
-1. **Repository klonen**
-   ```bash
-   git clone https://github.com/CLeckIn/IoT-Wetterstation-SYT-Projekt.git
-   cd IoT-Wetterstation-SYT-Projekt
-   ```
-
-2. **Bibliotheken in der Arduino IDE installieren**  
+1. **Bibliotheken in der Arduino IDE installieren**  
    Über *Sketch → Bibliotheken verwalten*:
    - Adafruit BMP280
    - WiFiManager (by tzapu)
    - UniversalTelegramBot
-   - ArduinoJson (≥ 6.x)
+   - ArduinoJson
     
+2. **MAC-Adresse des Empfängers ermitteln**
+   
+    Dazu den darunter angeführten code ausführen und die MAC-Addresse kopieren.
+   
+   ```cpp
+    #include <WiFi.h>
+    
+    void setup() {
+      Serial.begin(115200);
+      WiFi.mode(WIFI_STA);
+      delay(500);
+      Serial.println(WiFi.macAddress());
+    }
+    
+    void loop() {}
+3. **MAC-Adresse im Sender eintragen**  
+Die MAC-Addresse kopieren vom output des obigen codes und in die eckigen klammern in ```uint8_t receiverAddress[]``` eintragen.
+4. **Sender-Sketch hochladen** auf den Sender-ESP32
 
-3. **MAC-Adresse des Empfängers ermitteln**  
-   Sketch auf den Empfänger-ESP32 laden, den Serial Monitor öffnen und die angezeigte MAC-Adresse notieren.
+5. **Empfänger-Sketch hochladen** auf den Empfänger-ESP32
 
-4. **MAC-Adresse im Sender eintragen**  
-   In `src/Sender.ino` die Konstante `RECEIVER_MAC` mit der notierten Adresse befüllen.
-
-5. **Sender-Sketch hochladen** auf den Sender-ESP32
-
-6. **Empfänger-Sketch hochladen** auf den Empfänger-ESP32
+6. **Telegram Bot-Token und Chat-ID eintragen**  
 
 7. **WLAN konfigurieren**  
-   Beim ersten Start öffnet der Empfänger den Accesspoint `Wetterstation-Setup`. Verbinde dich damit und gib deine WLAN-Daten ein.
+   Gib deine WLAN-Daten ein. (Name des WLAN's und das dazugehörige passwort).
 
 8. **Dashboard aufrufen**  
    Öffne im Browser die IP-Adresse des Empfängers (z. B. `http://192.168.1.42`).
 
----
-
-## 6. Code-Erklärung
+### Code
 
 ### Sender (`src/Sender.ino`)
 
@@ -196,50 +160,46 @@ Die Empfänger-Station dient als Gateway und stellt die empfangenen Daten visuel
             
 ```
 
----
+### Bilder und Schaltungen
 
-## 7. LED-Logik
+### Schaltplan
 
-### LED 1 – Magnetstatus
+![Schaltplan der IoT-Wetterstation](./images/Schaltplan.png)
 
-| Zustand               | Farbe          |
-|-----------------------|----------------|
-| Magnet erkannt        | 🟢 Grün         |
-| Kein Magnet           | 🔴 Rot          |
-| Sender offline        | 🔴 Rot          |
+### Technische Beschreibung des Schaltplans
 
-### LED 2 – Systemstatus
+Der Hardware-Aufbau besteht aus zwei funktional getrennten Einheiten: einer **Sender-Station** zur Messwerterfassung und einer **Empfänger-Station** zur Visualisierung. Die Kommunikation zwischen den beiden Knoten erfolgt kabellos über ESP-NOW.
 
-| Zustand                          | Farbe                  |
-|----------------------------------|------------------------|
-| Temperatur normal (18–28 °C)     | 🔵 Blau                |
-| Temperatur hoch (> 28 °C)        | 🔴 Rot                 |
-| Temperatur niedrig (< 18 °C)     | 🩵 Cyan (Blau + Grün)  |
-| Sender seit > 10 s offline       | 🟠 Orange (blinkend)   |
+1. Sender-Station
+    An der Sender-Station wurden die Sensoren zur Erfassung der Umwelt- und Sicherheitsdaten angebunden. Da die Pins auf der rechten Seite des ESP32 durch das Breadboard verdeckt sind, wurde die gesamte Beschaltung auf die linke Seite (hauptsächlich GPIOs der 30er-Reihe und I2C-Pins) verlegt.
+    
+    *   **BMP180 (Umweltsensor):** Die Kommunikation erfolgt über den I2C-Bus. Hierbei wurde der Daten-Pin (SDA) an **GPIO 32** und der Takt-Pin (SCL) an **GPIO 33** angeschlossen. Die Spannungsversorgung erfolgt regulär über den 3V3-Pin des Mikrocontrollers.
+    *   **Hall-Sensor (Magnetfeld-Simulation):** Zur Simulation eines magnetischen Türkontakts wurde ein Schiebeschalter verwendet. Dieser ist an **GPIO 34** angeschlossen. Durch die Verwendung des internen (bzw. externen) Pull-up-Widerstands liefert der Schalter ein klares HIGH/LOW-Signal, das vom ESP32 ausgewertet wird.
 
+2. Empfänger-Station
+    Die Empfänger-Station dient als Gateway und stellt die empfangenen Daten visuell dar. Hierzu wurden zwei RGB-LEDs (Common Cathode) mit entsprechenden Vorwiderständen (220 Ω) integriert:
+    
+    *   **LED 1 (Magnet-Status):** Diese LED signalisiert den Zustand des Hall-Sensors am Sender. Sie ist an den Pins **GPIO 25 (Rot)**, **GPIO 26 (Grün)** und **GPIO 27 (Blau)** angebunden.
+    *   **LED 2 (System-Status):** Zur Anzeige der Temperaturwarnungen und Kommunikationsfehler wurden die Pins **GPIO 13 (Rot)** und **GPIO 14 (Blau)** verwendet. 
+    *   **Masseverbindung:** Alle Kathoden der LEDs sowie die Sensoren sind mit dem gemeinsamen Masse-Potenzial (GND) des jeweiligen ESP32 verbunden.
 
-> 📷 Dashboard-Screenshot: [`images/dashboard_screenshot.png`](images/dashboard_screenshot.png)  
-> 📱 Telegram-Screenshot: ![Telegram](images/telegram.png)
-## Mit /info werden die Daten der Wetterstation angezeigt.
+**Dashboard-Screenshot:**
 
----
+![Dashboard](images/dashboard_screenshot.png)  
 
-## 8. Mögliche Verbesserungen
+Im Dashboard kann man die Messwerte sehen und die beiden Status-LED's ein- und auschalten.
 
-| Verbesserung                           | Beschreibung                                                              |
-|----------------------------------------|---------------------------------------------------------------------------|
-| **HTTPS für Web-Dashboard**            | TLS/SSL-Zertifikat für sichere Übertragung der Messdaten                  |
-| **Datenpersistenz (Datenbank)**        | Speicherung von Messwerten in InfluxDB + Grafana-Dashboard                |
-| **Mehrere Sender**                     | ESP-NOW unterstützt bis zu 20 Peers – einfache Erweiterung auf mehrere Sensoren |
-| **OTA-Updates**                        | Over-the-Air Firmware-Updates via ArduinoOTA oder ESP-IDF                 |
-| **Batteriebetrieb + Deep Sleep**       | Sender mit LiPo-Akku und Deep-Sleep-Modus für energieeffizienten Betrieb  |
-| **Alarmbenachrichtigung**              | Automatische Telegram-Benachrichtigung bei Überschreitung von Schwellwerten |
-| **Luftfeuchtigkeit**                   | Austausch des BMP280 gegen einen BME280 für zusätzliche Feuchtigkeitsmessung |
-| **PCB-Design**                         | Übergang vom Breadboard-Prototyp auf eine eigene Leiterplatte             |
+**Telegram-Screenshot:** 
 
----
+![Telegram](images/telegram.png)
 
-## 9. Zusammenfassung
+Mit /info werden die Daten der Wetterstation angezeigt.
+
+**Projekt Aufbau**
+
+[`images/hardware_photo.jpg`](images/hardware_photo.jpg)
+
+## 5. Zusammenfassung
 
 In diesem Projekt wurde eine vollständige IoT-Wetterstation mit zwei ESP32-Mikrocontrollern entwickelt. Der Sender erfasst Temperatur, Luftdruck und Magnetstatus und überträgt die Daten drahtlos per ESP-NOW. Der Empfänger verarbeitet die Daten, stellt sie über ein Web-Dashboard bereit, ermöglicht Telegram-Abfragen und zeigt den Systemstatus über RGB-LEDs an.
 
@@ -250,9 +210,7 @@ Das Projekt demonstriert praxisrelevante Konzepte der eingebetteten Systemtechni
 - Sichere Konfigurationsverwaltung (Secrets-Datei, .gitignore)
 - Robuste Fehlerbehandlung (Paketgrößenvalidierung, Plausibilitätsprüfung)
 
----
-
-## 10. Quellen
+## 6. Quellen
 
 [1] Espressif Systems, "ESP-NOW," *Espressif Docs*. [online]. Available at: https://docs.espressif.com/projects/esp-idf/en/latest/esp32/api-reference/network/esp_now.html. 
 
