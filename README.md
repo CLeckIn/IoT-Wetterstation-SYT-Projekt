@@ -79,16 +79,18 @@ Die *WiFiManager*-Bibliothek (by tzapu) ermöglicht es, WLAN-Zugangsdaten ohne H
 
 ## 4. Arbeitsschritte
 
-1. **New Sketch in der Arduino IDE**
+1. **Checken ob alle physische [Komponenten](.docs/components.md) vorhanden sind**
 
-1. **Bibliotheken in der Arduino IDE installieren**  
+2. **New Sketch in der Arduino IDE**
+
+3. **Bibliotheken in der Arduino IDE installieren**  
    Über *Sketch → Bibliotheken verwalten*:
    - Adafruit BMP280
    - WiFiManager (by tzapu)
    - UniversalTelegramBot
    - ArduinoJson
     
-2. **MAC-Adresse des Empfängers ermitteln**
+4. **MAC-Adresse des Empfängers ermitteln**
    
     Dazu den darunter angeführten code ausführen und die MAC-Addresse kopieren.
    
@@ -105,19 +107,19 @@ Die *WiFiManager*-Bibliothek (by tzapu) ermöglicht es, WLAN-Zugangsdaten ohne H
      void loop() {}
     ```
 
-3. **MAC-Adresse im Sender eintragen**  
+5. **MAC-Adresse im Sender eintragen**  
    Die MAC-Addresse kopieren vom output des obigen codes und in die eckigen klammern in ```uint8_t receiverAddress[]``` eintragen.
 
-4. **Sender-Sketch hochladen** auf den Sender-ESP32
+6. **Sender-Sketch hochladen** auf den Sender-ESP32
 
-5. **Empfänger-Sketch hochladen** auf den Empfänger-ESP32
+7. **Empfänger-Sketch hochladen** auf den Empfänger-ESP32
 
-6. **Telegram Bot-Token und Chat-ID eintragen**  
+8. **Telegram Bot-Token und Chat-ID eintragen**  
 
-7. **WLAN konfigurieren**  
+9. **WLAN konfigurieren**  
    Gib deine WLAN-Daten ein. (Name des WLAN's und das dazugehörige passwort).
 
-8. **Dashboard aufrufen**  
+10. **Dashboard aufrufen**  
    Öffne im Browser die IP-Adresse des Empfängers (z. B. `http://192.168.1.42`).
 
 ### Code
