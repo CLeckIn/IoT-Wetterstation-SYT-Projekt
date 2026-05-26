@@ -35,8 +35,7 @@ Alle verwendeten Bauteile und Materialien für das SYT-Projekt.
 | Anzahl | Bezeichnung              | Beschreibung                     |
 |--------|--------------------------|----------------------------------|
 | 2×     | **Breadboard**           | Steckplatine für den Prototypen  |
-| ~30×   | **Jumper-Kabel M–M**     | Verbindungskabel                 |
-| 1×     | **USB-Kabel (Micro-USB)**| Stromversorgung / Programmierung |
+| 2×     | **USB-Kabel**            | Stromversorgung / Programmierung |
 
 ---
 
