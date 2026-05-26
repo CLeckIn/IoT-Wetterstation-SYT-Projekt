@@ -88,7 +88,7 @@ Die *WiFiManager*-Bibliothek (by tzapu) ermöglicht es, WLAN-Zugangsdaten ohne H
 
 ### Benötigte Bauteile
 
-Siehe [`docs/components.md`](docs/components.md) für die vollständige Komponenten- und Kostenliste.
+Siehe [`docs/components.md`](docs/components.md) für die vollständige Komponentenliste.
 
 ### Schaltplan
 
