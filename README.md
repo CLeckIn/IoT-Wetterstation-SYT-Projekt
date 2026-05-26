@@ -127,13 +127,7 @@ Die Empfänger-Station dient als Gateway und stellt die empfangenen Daten visuel
    cd IoT-Wetterstation-SYT-Projekt
    ```
 
-2. **`secrets.h` anlegen**
-   ```bash
-   cp src/secrets.h.example src/secrets.h
-   # Datei öffnen und eigene Werte eintragen
-   ```
-
-3. **Bibliotheken in der Arduino IDE installieren**  
+2. **Bibliotheken in der Arduino IDE installieren**  
    Über *Sketch → Bibliotheken verwalten*:
    - Adafruit BMP280
    - WiFiManager (by tzapu)
@@ -141,20 +135,20 @@ Die Empfänger-Station dient als Gateway und stellt die empfangenen Daten visuel
    - ArduinoJson (≥ 6.x)
     
 
-4. **MAC-Adresse des Empfängers ermitteln**  
+3. **MAC-Adresse des Empfängers ermitteln**  
    Sketch auf den Empfänger-ESP32 laden, den Serial Monitor öffnen und die angezeigte MAC-Adresse notieren.
 
-5. **MAC-Adresse im Sender eintragen**  
+4. **MAC-Adresse im Sender eintragen**  
    In `src/Sender.ino` die Konstante `RECEIVER_MAC` mit der notierten Adresse befüllen.
 
-6. **Sender-Sketch hochladen** auf den Sender-ESP32
+5. **Sender-Sketch hochladen** auf den Sender-ESP32
 
-7. **Empfänger-Sketch hochladen** auf den Empfänger-ESP32
+6. **Empfänger-Sketch hochladen** auf den Empfänger-ESP32
 
-8. **WLAN konfigurieren**  
+7. **WLAN konfigurieren**  
    Beim ersten Start öffnet der Empfänger den Accesspoint `Wetterstation-Setup`. Verbinde dich damit und gib deine WLAN-Daten ein.
 
-9. **Dashboard aufrufen**  
+8. **Dashboard aufrufen**  
    Öffne im Browser die IP-Adresse des Empfängers (z. B. `http://192.168.1.42`).
 
 ---
