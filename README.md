@@ -219,7 +219,7 @@ Die *WiFiManager*-Bibliothek (by tzapu) ermöglicht es, WLAN-Zugangsdaten ohne H
 
 ### Bilder und Schaltungen
 
-### Schaltplan
+**Schaltplan**
 
 ![Schaltplan der IoT-Wetterstation](./images/Schaltplan.png)
 
