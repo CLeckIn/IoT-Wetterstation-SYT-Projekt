@@ -7,501 +7,201 @@
 #include <ArduinoJson.h>
 #include <time.h>
 
-// =========================
-// WLAN
-// =========================
+// Funktionen ankündigen, damit der Compiler weiß, dass sie später kommen
+void updateTime();
+void updateLEDs();
+void handleNewMessages(int numNewMessages);
+void handleRoot();
+void handleApiData();
+void handleApiTemperature();
+void handleApiSensor();
 
+// Zugangsdaten für das lokale Netzwerk
 const char* ssid = "S23 Ultra";
 const char* password = "luka2010";
 
-
-// =========================
-// TELEGRAM
-// =========================
-
+// Telegram Bot Konfiguration
 #define BOT_TOKEN "8697671962:AAEsVA89v2OvPXvdE6O8hWAsOZAm1rm_hdY"
 #define CHAT_ID "1005537122"
 
-// =========================
-// LED PINS
-// =========================
-
+// Definition der LED-Anschlüsse
 #define L1_R 25
 #define L1_G 26
-
 #define L2_R 13
 #define L2_B 14
 
-// =========================
-// DATENSTRUKTUR
-// =========================
-
+// Paketstruktur für den Datenempfang (muss zum Sender passen)
 typedef struct struct_message {
-
   float temp;
   float press;
   bool magnet;
-
 } struct_message;
 
 struct_message incomingData;
 
-// =========================
-// VARIABLEN
-// =========================
-
+// Status-Variablen für die Steuerung und Überwachung
 bool led1Active = true;
 bool led2Active = true;
-
 unsigned long lastRx = 0;
 unsigned long lastBotCheck = 0;
-
 String lastTime = "--:--:--";
+bool linkLossAlarmSent = false;
 
-// =========================
-// SERVER + TELEGRAM
-// =========================
+// Speicher für die Extremwerte
+float minTemp = 99.0;
+float maxTemp = -99.0;
 
 WebServer server(80);
-
 WiFiClientSecure client;
+UniversalTelegramBot bot(BOT_TOKEN, client);
 
-UniversalTelegramBot bot(
-  BOT_TOKEN,
-  client
-);
-
-// =========================
-// ZEIT
-// =========================
-
+// Holt die aktuelle Uhrzeit vom NTP-Server
 void updateTime() {
-
   struct tm timeinfo;
-
   if(getLocalTime(&timeinfo)) {
-
-    char buf[20];
-
-    strftime(
-      buf,
-      sizeof(buf),
-      "%H:%M:%S",
-      &timeinfo
-    );
-
+    char buf[25];
+    strftime(buf, sizeof(buf), "%Y-%m-%dT%H:%M:%S", &timeinfo);
     lastTime = String(buf);
   }
 }
 
-// =========================
-// LEDS
-// =========================
-
+// Regelt das Leuchtverhalten der beiden RGB-LEDs
 void updateLEDs() {
-
-  // =====================
-  // LED 1
-  // =====================
-
+  // Steuerung der Magnet-LED
   if (!led1Active) {
-
-    digitalWrite(L1_R, LOW);
-    digitalWrite(L1_G, LOW);
-
+    digitalWrite(L1_R, LOW); digitalWrite(L1_G, LOW);
   } else {
-
-    if(incomingData.magnet) {
-
-      digitalWrite(L1_R, LOW);
-      digitalWrite(L1_G, HIGH);
-
-    } else {
-
-      digitalWrite(L1_R, HIGH);
-      digitalWrite(L1_G, LOW);
+    if(incomingData.magnet) { 
+      digitalWrite(L1_R, LOW); digitalWrite(L1_G, HIGH); 
+    } else { 
+      digitalWrite(L1_R, HIGH); digitalWrite(L1_G, LOW); 
     }
   }
 
-  // =====================
-  // LED 2
-  // =====================
-
+  // Steuerung der System- und Temperatur-LED
   if (!led2Active) {
-
-    digitalWrite(L2_R, LOW);
-    digitalWrite(L2_B, LOW);
-
+    digitalWrite(L2_R, LOW); digitalWrite(L2_B, LOW);
   } else {
-
-    if (millis() - lastRx > 30000) {
-
-      digitalWrite(
-        L2_R,
-        (millis() / 500) % 2
-      );
-
-      digitalWrite(L2_B, LOW);
-
+    // Wenn über 70 Sekunden keine Daten kommen, blinkt es rot (Sender-Ausfall)
+    if (millis() - lastRx > 70000) {
+      digitalWrite(L2_R, (millis() / 500) % 2); digitalWrite(L2_B, LOW);
+      if (!linkLossAlarmSent && lastRx != 0) {
+        bot.sendMessage(CHAT_ID, "⚠️ ALARM: Verbindung zum Sender verloren!", "");
+        linkLossAlarmSent = true;
+      }
     } else {
-
-      if (incomingData.temp > 28.0) {
-
-        digitalWrite(L2_R, HIGH);
-        digitalWrite(L2_B, LOW);
-
-      } else {
-
-        digitalWrite(L2_R, LOW);
-        digitalWrite(L2_B, HIGH);
+      // Normaler Betrieb: Rot bei Hitze, sonst Blau
+      if (incomingData.temp > 28.0) { 
+        digitalWrite(L2_R, HIGH); digitalWrite(L2_B, LOW); 
+      } else { 
+        digitalWrite(L2_R, LOW); digitalWrite(L2_B, HIGH); 
       }
     }
   }
 }
 
-// =========================
-// TELEGRAM
-// =========================
+// JSON-Schnittstellen für externe Abfragen
+void handleApiData() {
+  String json = "{\"timestamp\":\"" + lastTime + "\",\"temperature\":" + String(incomingData.temp, 2) + ",\"min\":" + String(minTemp, 2) + ",\"max\":" + String(maxTemp, 2) + ",\"pressure\":" + String(incomingData.press, 2) + ",\"sensor\":" + String(incomingData.magnet) + "}";
+  server.send(200, "application/json", json);
+}
 
-void handleNewMessages(
-  int numNewMessages
-) {
+void handleApiTemperature() {
+  String json = "{\"temperature\":" + String(incomingData.temp, 2) + ",\"min\":" + String(minTemp, 2) + ",\"max\":" + String(maxTemp, 2) + "}";
+  server.send(200, "application/json", json);
+}
 
+void handleApiSensor() {
+  String json = "{\"sensor\":" + String(incomingData.magnet) + "}";
+  server.send(200, "application/json", json);
+}
+
+// Verarbeitet eingehende Telegram-Befehle
+void handleNewMessages(int numNewMessages) {
   for (int i = 0; i < numNewMessages; i++) {
-
-    String text =
-      bot.messages[i].text;
+    String text = bot.messages[i].text;
+    String from_id = String(bot.messages[i].chat_id);
 
     if (text == "/info") {
-
       updateTime();
-
-      String msg;
-
-      msg += "📊 IoT Bericht\n\n";
-
-      msg += "🌡 Temperatur: ";
-      msg += String(incomingData.temp, 2);
-      msg += " °C\n";
-
-      msg += "☁ Druck: ";
-      msg += String(incomingData.press, 2);
-      msg += " hPa\n";
-
-      msg += "🧲 Magnet: ";
-
-      if(incomingData.magnet) {
-        msg += "JA ✅";
-      } else {
-        msg += "NEIN ❌";
-      }
-
-      msg += "\n⏰ Zeit: ";
-      msg += lastTime;
-
-      bot.sendMessage(
-        bot.messages[i].chat_id,
-        msg,
-        ""
-      );
+      String msg = "📊 IoT Bericht\n\n";
+      msg += "🌡 Temp: " + String(incomingData.temp, 2) + " °C\n";
+      msg += "❄️ Min: " + String(minTemp, 2) + " | 🔥 Max: " + String(maxTemp, 2) + "\n";
+      msg += "☁ Druck: " + String(incomingData.press, 2) + " hPa\n";
+      msg += "🧲 Magnet: " + String(incomingData.magnet ? "JA ✅" : "NEIN ❌") + "\n";
+      msg += "⏰ Zeit: " + lastTime;
+      bot.sendMessage(from_id, msg, "");
     }
+    // Fernsteuerung der LEDs via Chat
+    else if (text == "/led1_on") { led1Active = true; bot.sendMessage(from_id, "LED 1 AN", ""); }
+    else if (text == "/led1_off") { led1Active = false; bot.sendMessage(from_id, "LED 1 AUS", ""); }
+    else if (text == "/led2_on") { led2Active = true; bot.sendMessage(from_id, "LED 2 AN", ""); }
+    else if (text == "/led2_off") { led2Active = false; bot.sendMessage(from_id, "LED 2 AUS", ""); }
   }
 }
 
-// =========================
-// ESP NOW
-// =========================
-
-void OnDataRecv(
-  const esp_now_recv_info_t *info,
-  const uint8_t *data,
-  int len
-) {
-
-  memcpy(
-    &incomingData,
-    data,
-    sizeof(incomingData)
-  );
-
+// Wird ausgeführt, wenn ein neues Funkpaket ankommt
+void OnDataRecv(const esp_now_recv_info_t *info, const uint8_t *data, int len) {
+  memcpy(&incomingData, data, sizeof(incomingData));
   lastRx = millis();
-
   updateTime();
 
-  Serial.println(
-    "\n===== DATEN EMPFANGEN ====="
-  );
+  // Min/Max Werte aktualisieren
+  if (incomingData.temp < minTemp) minTemp = incomingData.temp;
+  if (incomingData.temp > maxTemp) maxTemp = incomingData.temp;
 
-  Serial.print("Temperatur: ");
-  Serial.println(incomingData.temp);
-
-  Serial.print("Druck: ");
-  Serial.println(incomingData.press);
-
-  Serial.print("Magnet: ");
-  Serial.println(incomingData.magnet);
+  // Alarm zurücksetzen, wenn der Sender wieder da ist
+  if (linkLossAlarmSent) {
+    bot.sendMessage(CHAT_ID, "✅ Verbindung wiederhergestellt.", "");
+    linkLossAlarmSent = false;
+  }
 }
 
-// =========================
-// WEBSEITE
-// =========================
-
+// Erstellt die HTML-Seite für das Dashboard
 void handleRoot() {
-
-  String html;
-
-  html += "<!DOCTYPE html><html><head>";
-  html += "<meta charset='UTF-8'>";
-  html += "<meta http-equiv='refresh' content='5'>";
-
-  html += "<style>";
-
-  html += "body{";
-  html += "font-family:sans-serif;";
-  html += "background:#121212;";
-  html += "color:white;";
-  html += "text-align:center;";
-  html += "padding-top:50px;";
-  html += "}";
-
-  html += ".card{";
-  html += "background:#1e1e1e;";
-  html += "padding:30px;";
-  html += "border-radius:15px;";
-  html += "display:inline-block;";
-  html += "border:1px solid #333;";
-  html += "}";
-
-  html += ".btn{";
-  html += "display:block;";
-  html += "margin:10px auto;";
-  html += "padding:15px;";
-  html += "width:220px;";
-  html += "border-radius:10px;";
-  html += "font-weight:bold;";
-  html += "text-decoration:none;";
-  html += "color:black;";
-  html += "}";
-
-  html += "</style></head><body>";
-
-  html += "<div class='card'>";
-
-  html += "<h1>🚀 IoT Dashboard</h1>";
-
-  html += "<div style='font-size:3.5em; color:#03dac6;'>";
-
-  html += String(incomingData.temp, 2);
-
-  html += " &deg;C</div>";
-
-  html += "<h3>Druck: ";
-
-  html += String(incomingData.press, 2);
-
-  html += " hPa</h3>";
-
-  html += "<h3>Magnet: ";
-
-  html += (
-    incomingData.magnet
-    ? "JA ✅"
-    : "NEIN ❌"
-  );
-
-  html += "</h3>";
-
-  html += "<p style='color:gray;'>";
-
-  html += "Update: ";
-  html += lastTime;
-
-  html += "</p>";
-
-  html += "<hr>";
-
-  html += "<a href='/t1' ";
-  html += "style='background:#bb86fc;' ";
-  html += "class='btn'>LED 1 AN/AUS</a>";
-
-  html += "<a href='/t2' ";
-  html += "style='background:#03dac6;' ";
-  html += "class='btn'>LED 2 AN/AUS</a>";
-
-  html += "</div></body></html>";
-
-  server.send(
-    200,
-    "text/html",
-    html
-  );
+  String html = "<!DOCTYPE html><html><head><meta charset='UTF-8'><meta http-equiv='refresh' content='5'><style>body{font-family:sans-serif;background:#121212;color:white;text-align:center;padding-top:50px;}.card{background:#1e1e1e;padding:30px;border-radius:15px;display:inline-block;border:1px solid #333;}.btn{display:block;margin:10px auto;padding:15px;width:220px;border-radius:10px;font-weight:bold;text-decoration:none;color:black;}</style></head><body><div class='card'><h1>🚀 IoT Dashboard</h1><div style='font-size:3.5em; color:#03dac6;'>" + String(incomingData.temp, 2) + " &deg;C</div>";
+  html += "<p style='color:#ffab00;'>Min: " + String(minTemp, 2) + " &deg;C | Max: " + String(maxTemp, 2) + " &deg;C</p>";
+  html += "<h3>Druck: " + String(incomingData.press, 2) + " hPa</h3><h3>Magnet: " + String(incomingData.magnet ? "JA ✅" : "NEIN ❌") + "</h3><p style='color:gray;'>Update: " + lastTime + "</p><hr><a href='/t1' style='background:#bb86fc;' class='btn'>LED 1 AN/AUS</a><a href='/t2' style='background:#03dac6;' class='btn'>LED 2 AN/AUS</a></div></body></html>";
+  server.send(200, "text/html", html);
 }
-
-// =========================
-// SETUP
-// =========================
 
 void setup() {
-
   Serial.begin(115200);
+  pinMode(L1_R, OUTPUT); pinMode(L1_G, OUTPUT);
+  pinMode(L2_R, OUTPUT); pinMode(L2_B, OUTPUT);
 
-  delay(1000);
-
-  pinMode(L1_R, OUTPUT);
-  pinMode(L1_G, OUTPUT);
-
-  pinMode(L2_R, OUTPUT);
-  pinMode(L2_B, OUTPUT);
-
-  // =====================
-  // WLAN
-  // =====================
-
+  // WLAN-Verbindung aufbauen
   WiFi.mode(WIFI_STA);
+  WiFi.begin(ssid, password);
+  while (WiFi.status() != WL_CONNECTED) { delay(500); Serial.print("."); }
 
-  WiFi.begin(
-    ssid,
-    password
-  );
-
-  Serial.print("Verbinde WLAN");
-
-  while (
-    WiFi.status()
-    != WL_CONNECTED
-  ) {
-
-    delay(500);
-    Serial.print(".");
-  }
-
-  Serial.println("\nWLAN verbunden");
-
-  Serial.print("IP Adresse: ");
-  Serial.println(WiFi.localIP());
-
-  Serial.print("WLAN Kanal: ");
-  Serial.println(WiFi.channel());
-
-  Serial.print("MAC Adresse: ");
-  Serial.println(WiFi.macAddress());
-
-  // =====================
-  // ZEIT
-  // =====================
-
-  configTime(
-    3600,
-    3600,
-    "pool.ntp.org"
-  );
-
-  // =====================
-  // TELEGRAM
-  // =====================
-
+  // Zeit und Telegram-Sicherheit einstellen
+  configTime(3600, 3600, "pool.ntp.org");
   client.setInsecure();
+  esp_wifi_set_channel(11, WIFI_SECOND_CHAN_NONE);
 
-  bot.sendMessage(
-    CHAT_ID,
-    "✅ ESP32 Empfänger gestartet",
-    ""
-  );
+  // Funkprotokoll starten
+  if (esp_now_init() != ESP_OK) return;
+  esp_now_register_recv_cb(OnDataRecv);
 
-  // =====================
-  // KANAL 11
-  // =====================
-
-  esp_wifi_set_channel(
-    11,
-    WIFI_SECOND_CHAN_NONE
-  );
-
-  // =====================
-  // ESP NOW
-  // =====================
-
-  if (
-    esp_now_init()
-    != ESP_OK
-  ) {
-
-    Serial.println("ESP NOW Fehler");
-    return;
-  }
-
-  esp_now_register_recv_cb(
-    OnDataRecv
-  );
-
-  Serial.println("ESP NOW bereit");
-
-  // =====================
-  // WEBSERVER
-  // =====================
-
-  server.on(
-    "/",
-    handleRoot
-  );
-
-  server.on("/t1", []() {
-
-    led1Active = !led1Active;
-
-    server.sendHeader(
-      "Location",
-      "/"
-    );
-
-    server.send(303);
-  });
-
-  server.on("/t2", []() {
-
-    led2Active = !led2Active;
-
-    server.sendHeader(
-      "Location",
-      "/"
-    );
-
-    server.send(303);
-  });
-
+  // Webserver-Routen definieren
+  server.on("/", handleRoot);
+  server.on("/t1", []() { led1Active = !led1Active; server.sendHeader("Location", "/"); server.send(303); });
+  server.on("/t2", []() { led2Active = !led2Active; server.sendHeader("Location", "/"); server.send(303); });
+  server.on("/api/data", handleApiData);
+  server.on("/api/data/temperature", handleApiTemperature);
+  server.on("/api/data/sensor", handleApiSensor);
   server.begin();
-
-  Serial.println(
-    "Webserver gestartet"
-  );
 }
 
-// =========================
-// LOOP
-// =========================
-
 void loop() {
-
   server.handleClient();
-
   updateLEDs();
 
-  if (
-    millis()
-    - lastBotCheck
-    > 2000
-  ) {
-
-    int n =
-      bot.getUpdates(
-        bot.last_message_received + 1
-      );
-
-    if (n > 0) {
-
-      handleNewMessages(n);
-    }
-
+  // Telegram-Bot in festen Intervallen abfragen
+  if (millis() - lastBotCheck > 2000) {
+    int n = bot.getUpdates(bot.last_message_received + 1);
+    if (n > 0) { handleNewMessages(n); }
     lastBotCheck = millis();
   }
 }
