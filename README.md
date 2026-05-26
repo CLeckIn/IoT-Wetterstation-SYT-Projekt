@@ -98,13 +98,13 @@ Siehe [`docs/components.md`](docs/components.md) für die vollständige Komponen
 
 Der Hardware-Aufbau besteht aus zwei funktional getrennten Einheiten: einer **Sender-Station** zur Messwerterfassung und einer **Empfänger-Station** zur Visualisierung. Die Kommunikation zwischen den beiden Knoten erfolgt kabellos über ESP-NOW.
 
-#### 1. Sender-Station (Sensor-Knoten)
+#### 1. Sender-Station 
 An der Sender-Station wurden die Sensoren zur Erfassung der Umwelt- und Sicherheitsdaten angebunden. Da die Pins auf der rechten Seite des ESP32 durch das Breadboard verdeckt sind, wurde die gesamte Beschaltung auf die linke Seite (hauptsächlich GPIOs der 30er-Reihe und I2C-Pins) verlegt.
 
 *   **BMP180 (Umweltsensor):** Die Kommunikation erfolgt über den I2C-Bus. Hierbei wurde der Daten-Pin (SDA) an **GPIO 32** und der Takt-Pin (SCL) an **GPIO 33** angeschlossen. Die Spannungsversorgung erfolgt regulär über den 3V3-Pin des Mikrocontrollers.
 *   **Hall-Sensor (Magnetfeld-Simulation):** Zur Simulation eines magnetischen Türkontakts wurde ein Schiebeschalter verwendet. Dieser ist an **GPIO 34** angeschlossen. Durch die Verwendung des internen (bzw. externen) Pull-up-Widerstands liefert der Schalter ein klares HIGH/LOW-Signal, das vom ESP32 ausgewertet wird.
 
-#### 2. Empfänger-Station (Basis-Knoten)
+#### 2. Empfänger-Station
 Die Empfänger-Station dient als Gateway und stellt die empfangenen Daten visuell dar. Hierzu wurden zwei RGB-LEDs (Common Cathode) mit entsprechenden Vorwiderständen (220 Ω) integriert:
 
 *   **LED 1 (Magnet-Status):** Diese LED signalisiert den Zustand des Hall-Sensors am Sender. Sie ist an den Pins **GPIO 25 (Rot)**, **GPIO 26 (Grün)** und **GPIO 27 (Blau)** angebunden.
