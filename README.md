@@ -16,13 +16,12 @@ Das System besteht aus zwei ESP32-Boards, die über das **ESP-NOW**-Protokoll mi
 
 * Liest **Temperatur** und **Luftdruck** vom *BMP280*-Sensor (I²C)
 * Liest den **Magnetstatus** vom *LM393*-Hallsensor (Digital-I/O)
-* Sendet alle 2 Sekunden ein Datenpaket per ESP-NOW
+* Nutzt den **Deep Sleep Mode**: Wacht alle 15 Sekunden auf, sendet ein Datenpaket und schläft wieder.
 
 ```cpp
 typedef struct struct_message {
     float temp;      // Temperatur in °C
     float press;     // Luftdruck in hPa
-    int   hallRaw;   // Rohwert des Hall-Sensors
     bool  magnet;    // true = Magnet in der Nähe
 } struct_message;
 ```
@@ -72,10 +71,9 @@ Die *WiFiManager*-Bibliothek (by tzapu) ermöglicht es, WLAN-Zugangsdaten ohne H
 
 | Zustand                          | Farbe                  |
 |----------------------------------|------------------------|
-| Temperatur normal (18–28 °C)     | 🔵 Blau                |
+| Temperatur normal (<= 28 °C)     | 🔵 Blau                |
 | Temperatur hoch (> 28 °C)        | 🔴 Rot                 |
-| Temperatur niedrig (< 18 °C)     | 🩵 Cyan (Blau + Grün)  |
-| Sender seit > 10 s offline       | 🟠 Orange (blinkend)   |
+| Sender seit > 30 s offline       | 🔴 Rot (blinkend)      |
 
 ## 4. Arbeitsschritte
 
@@ -126,15 +124,15 @@ Die *WiFiManager*-Bibliothek (by tzapu) ermöglicht es, WLAN-Zugangsdaten ohne H
 
 #### Sender-Konfiguration (`src/Sender.ino`)
 
- Abschnitt           | Erklärung                                                                 |
+| Abschnitt           | Erklärung                                                                 |
 |---------------------|---------------------------------------------------------------------------|
 | `struct_message`    | Datenstruktur, die per ESP-NOW übertragen wird                            |
-| `RECEIVER_MAC`      | MAC-Adresse des Empfängers – muss manuell eingetragen werden              |
-| `setup()`           | Initialisiert BMP280, Hall-Pin, WiFi (nur Station-Modus) und ESP-NOW      |
-| `loop()`            | Liest Sensoren alle 2 s, prüft Plausibilität und sendet per ESP-NOW       |
-| `onDataSent()`      | Callback nach erfolgtem Sendeversuch – gibt Status im Serial aus          |
+| `receiverAddress[]` | MAC-Adresse des Empfängers – muss manuell eingetragen werden              |
+| `setup()`           | Initialisiert BMP280, Hall-Pin, WiFi (Kanal 11) und ESP-NOW               |
+| `loop()`            | Bleibt leer, da Messung und Deep Sleep im setup() erfolgen                |
+| `OnDataSent()`      | Callback nach erfolgtem Sendeversuch – startet den Deep Sleep             |
 
-**Wichtige Robustheits-Maßnahme:** Vor dem Senden werden die BMP280-Werte auf `NaN` und plausible Druckbereiche (800–1100 hPa) geprüft. Ungültige Messwerte werden verworfen.
+**Wichtige Robustheits-Maßnahme:** Vor dem Senden werden die BMP280-Werte auf Erfolg geprüft. Falls der Sensor nicht gefunden wird, werden Standardwerte gesendet.
 
 | Variable | Wert | Beschreibung |
 |----------|------|-------------|
@@ -150,54 +148,51 @@ Die *WiFiManager*-Bibliothek (by tzapu) ermöglicht es, WLAN-Zugangsdaten ohne H
 
 | Abschnitt              | Erklärung                                                                    |
 |------------------------|------------------------------------------------------------------------------|
-| `onDataReceived()`     | ESP-NOW Callback – prüft Paketgröße vor `memcpy`, setzt `newDataAvailable`   |
+| `OnDataRecv()`         | ESP-NOW Callback – kopiert Daten in incomingData und setzt Zeitstempel       |
 | `handleRoot()`         | Erzeugt dynamisches HTML-Dashboard (Dark Mode) mit aktuellen Sensordaten     |
 | `updateLEDs()`         | Setzt LED 1 und LED 2 basierend auf Magnet- und Temperaturstatus             |
-| `handleTelegramMessages()` | Verarbeitet `/info`- und `/start`-Befehle des Telegram-Bots             |
-| `loop()`               | Abwechselndes Abarbeiten von Webserver, LED-Update, Telegram       |
+| `handleNewMessages()`  | Verarbeitet `/info`-Befehle des Telegram-Bots                                |
+| `loop()`               | Abarbeiten von Webserver, LED-Update und Telegram-Abfrage                    |
 
-**Wichtige Robustheits-Maßnahme:** Der ESP-NOW-Callback prüft `len == sizeof(struct_message)` bevor `memcpy` aufgerufen wird. Pakete falscher Größe werden verworfen.
+**Wichtige Robustheits-Maßnahme:** Der Empfänger nutzt einen Timeout von 30 Sekunden. Da der Sender alle 15 Sekunden sendet, wird so ein Ausfall sicher erkannt.
 
 **LED 1 – Magnetstatus**
 
 | Pin-Typ | GPIO | Farbe | Funktion |
 |---------|------|-------|----------|
-| `LED1_R` | 25 | Rot | Rote Komponente der Magnet-Status-LED |
-| `LED1_G` | 26 | Grün | Grüne Komponente der Magnet-Status-LED |
-| `LED1_B` | 27 | Blau | Blaue Komponente der Magnet-Status-LED |
+| `L1_R` | 25 | Rot | Rote Komponente der Magnet-Status-LED |
+| `L1_G` | 26 | Grün | Grüne Komponente der Magnet-Status-LED |
 
 **LED 2 – Systemstatus**
 
 | Pin-Typ | GPIO | Farbe | Funktion |
 |---------|------|-------|----------|
-| `LED2_R` | 14 | Rot | Rote Komponente der System-Status-LED |
-| `LED2_G` | 12 | Grün | Grüne Komponente der System-Status-LED |
-| `LED2_B` | 13 | Blau | Blaue Komponente der System-Status-LED |
+| `L2_R` | 13 | Rot | Rote Komponente der System-Status-LED |
+| `L2_B` | 14 | Blau | Blaue Komponente der System-Status-LED |
 
 **Schwellwerte und Timeouts**
 
 | Konstante | Wert | Einheit | Beschreibung |
 |-----------|------|--------|-------------|
-| `TEMP_HIGH` | `28.0` | °C | Obergrenze normale Temperatur → LED2 Rot |
-| `TEMP_LOW` | `18.0` | °C | Untergrenze normale Temperatur → LED2 Cyan |
-| `SENDER_TIMEOUT_MS` | `10000` | ms | Zeit bis Sender als offline gilt |
-| `TELEGRAM_INTERVAL_MS` | `3000` | ms | Abfrage-Intervall Telegram-Bot |
-| `BLINK_INTERVAL_MS` | `500` | ms | Blinkfrequenz bei Offline-Status |
+| `Temperatur-Grenze` | `28.0` | °C | Obergrenze normale Temperatur → LED2 Rot |
+| `lastRx Timeout` | `30000` | ms | Zeit bis Sender als offline gilt (Blinken) |
+| `lastBotCheck` | `2000` | ms | Abfrage-Intervall Telegram-Bot |
+| `Blink-Frequenz` | `500` | ms | Blinkgeschwindigkeit bei Offline-Status |
 
 **Webserver**
 
 | Parameter | Wert | Beschreibung |
 |-----------|------|-------------|
 | Port | `80` | HTTP-Port für Web-Dashboard |
-| Auto-Refresh | `10` Sekunden | Dashboard aktualisiert sich automatisch |
-| Design | Dark Mode | Dunkles Design mit Accent-Farben |
+| Auto-Refresh | `5` Sekunden | Dashboard aktualisiert sich automatisch |
+| Design | Dark Mode | Dunkles Design mit CSS-Styling |
 
 **Telegram Bot**
 
 | Befehl | Funktion | Antwort |
 |--------|----------|--------|
 | `/info` | Aktuelle Daten anzeigen | Temperatur, Druck, Magnetstatus, Zeit |
-| `/start` | Bot initialisieren | Willkommensnachricht + verfügbare Befehle |
+| `/start` | Bot initialisieren | Willkommensnachricht |
 
 
 ### Datenflussbeschreibung
@@ -206,12 +201,12 @@ Die *WiFiManager*-Bibliothek (by tzapu) ermöglicht es, WLAN-Zugangsdaten ohne H
 [BMP280 / LM393]
       │
       ▼
-[Sender ESP32] ──ESP-NOW──► [Empfänger ESP32]
-                                    │
-                    ┌───────────────┼───────────────┐
-                    ▼               ▼               ▼
-              [Webserver]     [Telegram Bot]   [RGB LEDs]
-                (Port 80)       (/info)        (Status)
+[Sender ESP32] ──ESP-NOW (Kanal 11)──► [Empfänger ESP32]
+                                               │
+                    ┌──────────────────────────┼──────────────────────────┐
+                    ▼                          ▼                          ▼
+              [Webserver]                [Telegram Bot]               [RGB LEDs]
+                (Port 80)                  (/info)                    (Status)
                     
                     
             
@@ -228,15 +223,15 @@ Die *WiFiManager*-Bibliothek (by tzapu) ermöglicht es, WLAN-Zugangsdaten ohne H
 Der Hardware-Aufbau besteht aus zwei funktional getrennten Einheiten: einer **Sender-Station** zur Messwerterfassung und einer **Empfänger-Station** zur Visualisierung. Die Kommunikation zwischen den beiden Knoten erfolgt kabellos über ESP-NOW.
 
 1. Sender-Station
-    An der Sender-Station wurden die Sensoren zur Erfassung der Umwelt- und Sicherheitsdaten angebunden. Da die Pins auf der rechten Seite des ESP32 durch das Breadboard verdeckt sind, wurde die gesamte Beschaltung auf die linke Seite (hauptsächlich GPIOs der 30er-Reihe und I2C-Pins) verlegt.
+    An der Sender-Station wurden die Sensoren zur Erfassung der Umwelt- und Sicherheitsdaten angebunden. Da die Pins auf der rechten Seite des ESP32 durch das Breadboard verdeckt sind, wurde die gesamte Beschaltung auf die linke Seite verlegt.
     
-    *   **BMP180 (Umweltsensor):** Die Kommunikation erfolgt über den I2C-Bus. Hierbei wurde der Daten-Pin (SDA) an **GPIO 32** und der Takt-Pin (SCL) an **GPIO 33** angeschlossen. Die Spannungsversorgung erfolgt regulär über den 3V3-Pin des Mikrocontrollers.
-    *   **Hall-Sensor (Magnetfeld-Simulation):** Zur Simulation eines magnetischen Türkontakts wurde ein Schiebeschalter verwendet. Dieser ist an **GPIO 34** angeschlossen. Durch die Verwendung des internen (bzw. externen) Pull-up-Widerstands liefert der Schalter ein klares HIGH/LOW-Signal, das vom ESP32 ausgewertet wird.
+    *   **BMP280 (Umweltsensor):** Die Kommunikation erfolgt über den I2C-Bus. Hierbei wurde der Daten-Pin (SDA) an **GPIO 32** und der Takt-Pin (SCL) an **GPIO 33** angeschlossen. Die Spannungsversorgung erfolgt über den 3V3-Pin des Mikrocontrollers.
+    *   **Hall-Sensor (Magnetfeld-Simulation):** Ein Hallsensor ist an **GPIO 34** angeschlossen. Das Modul liefert ein digitales Signal, das vom ESP32 ausgewertet wird.
 
 2. Empfänger-Station
     Die Empfänger-Station dient als Gateway und stellt die empfangenen Daten visuell dar. Hierzu wurden zwei RGB-LEDs (Common Cathode) mit entsprechenden Vorwiderständen (220 Ω) integriert:
     
-    *   **LED 1 (Magnet-Status):** Diese LED signalisiert den Zustand des Hall-Sensors am Sender. Sie ist an den Pins **GPIO 25 (Rot)**, **GPIO 26 (Grün)** und **GPIO 27 (Blau)** angebunden.
+    *   **LED 1 (Magnet-Status):** Diese LED signalisiert den Zustand des Hall-Sensors am Sender. Sie ist an den Pins **GPIO 25 (Rot)** und **GPIO 26 (Grün)** angebunden.
     *   **LED 2 (System-Status):** Zur Anzeige der Temperaturwarnungen und Kommunikationsfehler wurden die Pins **GPIO 13 (Rot)** und **GPIO 14 (Blau)** verwendet. 
     *   **Masseverbindung:** Alle Kathoden der LEDs sowie die Sensoren sind mit dem gemeinsamen Masse-Potenzial (GND) des jeweiligen ESP32 verbunden.
 
@@ -273,4 +268,4 @@ Das Projekt demonstriert praxisrelevante Konzepte der eingebetteten Systemtechni
 
 [2] Bosch Sensortec, "BMP280 Digital Pressure Sensor," *Bosch Sensortec*. [online]. Available at: https://www.bosch-sensortec.com/products/environmental-sensors/pressure-sensors/bmp280/.
 
-[3] tzapu, "WiFiManager," *GitHub*. [online]. Available at: https://github.com/tzapu/WiFiManager. 
+[3] tzapu, "WiFiManager," *GitHub*. [online]. Available at: https://github.com/tzapu/WiFiManager.
