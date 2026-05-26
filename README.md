@@ -92,19 +92,22 @@ Die *WiFiManager*-Bibliothek (by tzapu) ermöglicht es, WLAN-Zugangsdaten ohne H
    
     Dazu den darunter angeführten code ausführen und die MAC-Addresse kopieren.
    
-   ```cpp
-    #include <WiFi.h>
-    
-    void setup() {
-      Serial.begin(115200);
-      WiFi.mode(WIFI_STA);
-      delay(500);
-      Serial.println(WiFi.macAddress());
-    }
-    
-    void loop() {}
+     ```cpp
+     #include <WiFi.h>
+     
+     void setup() {
+       Serial.begin(115200);
+       WiFi.mode(WIFI_STA);
+       delay(500);
+       Serial.println(WiFi.macAddress());
+     }
+     
+     void loop() {}
+    ```
+
 3. **MAC-Adresse im Sender eintragen**  
-Die MAC-Addresse kopieren vom output des obigen codes und in die eckigen klammern in ```uint8_t receiverAddress[]``` eintragen.
+   Die MAC-Addresse kopieren vom output des obigen codes und in die eckigen klammern in ```uint8_t receiverAddress[]``` eintragen.
+
 4. **Sender-Sketch hochladen** auf den Sender-ESP32
 
 5. **Empfänger-Sketch hochladen** auf den Empfänger-ESP32
@@ -119,9 +122,9 @@ Die MAC-Addresse kopieren vom output des obigen codes und in die eckigen klammer
 
 ### Code
 
-### Sender (`src/Sender.ino`)
+#### Sender-Konfiguration (`src/Sender.ino`)
 
-| Abschnitt           | Erklärung                                                                 |
+ Abschnitt           | Erklärung                                                                 |
 |---------------------|---------------------------------------------------------------------------|
 | `struct_message`    | Datenstruktur, die per ESP-NOW übertragen wird                            |
 | `RECEIVER_MAC`      | MAC-Adresse des Empfängers – muss manuell eingetragen werden              |
@@ -131,7 +134,17 @@ Die MAC-Addresse kopieren vom output des obigen codes und in die eckigen klammer
 
 **Wichtige Robustheits-Maßnahme:** Vor dem Senden werden die BMP280-Werte auf `NaN` und plausible Druckbereiche (800–1100 hPa) geprüft. Ungültige Messwerte werden verworfen.
 
-### Empfänger (`src/Receiver.ino`)
+| Variable | Wert | Beschreibung |
+|----------|------|-------------|
+| `uS_TO_S_FACTOR` | `1000000ULL` | Umrechnungsfaktor Mikrosekunden → Sekunden |
+| `TIME_TO_SLEEP` | `15` | Sleep-Dauer in Sekunden |
+| `receiverAddress[]` | `{0x20, 0xE7, 0xC8, 0x67, 0x76, 0xB0}` | MAC-Adresse des Empfängers (manuell eintragen) |
+| `I2C_SDA` | `32` | GPIO-Pin für I²C Datenleitung (BMP280) |
+| `I2C_SCL` | `33` | GPIO-Pin für I²C Taktleitung (BMP280) |
+| `HALL_PIN` | `34` | GPIO-Pin für Hall-Sensor Eingang |
+
+
+#### Empfänger-Konfiguration (`src/Receiver.ino`)
 
 | Abschnitt              | Erklärung                                                                    |
 |------------------------|------------------------------------------------------------------------------|
@@ -142,6 +155,48 @@ Die MAC-Addresse kopieren vom output des obigen codes und in die eckigen klammer
 | `loop()`               | Abwechselndes Abarbeiten von Webserver, LED-Update, Telegram       |
 
 **Wichtige Robustheits-Maßnahme:** Der ESP-NOW-Callback prüft `len == sizeof(struct_message)` bevor `memcpy` aufgerufen wird. Pakete falscher Größe werden verworfen.
+
+**LED 1 – Magnetstatus**
+
+| Pin-Typ | GPIO | Farbe | Funktion |
+|---------|------|-------|----------|
+| `LED1_R` | 25 | Rot | Rote Komponente der Magnet-Status-LED |
+| `LED1_G` | 26 | Grün | Grüne Komponente der Magnet-Status-LED |
+| `LED1_B` | 27 | Blau | Blaue Komponente der Magnet-Status-LED |
+
+**LED 2 – Systemstatus**
+
+| Pin-Typ | GPIO | Farbe | Funktion |
+|---------|------|-------|----------|
+| `LED2_R` | 14 | Rot | Rote Komponente der System-Status-LED |
+| `LED2_G` | 12 | Grün | Grüne Komponente der System-Status-LED |
+| `LED2_B` | 13 | Blau | Blaue Komponente der System-Status-LED |
+
+**Schwellwerte und Timeouts**
+
+| Konstante | Wert | Einheit | Beschreibung |
+|-----------|------|--------|-------------|
+| `TEMP_HIGH` | `28.0` | °C | Obergrenze normale Temperatur → LED2 Rot |
+| `TEMP_LOW` | `18.0` | °C | Untergrenze normale Temperatur → LED2 Cyan |
+| `SENDER_TIMEOUT_MS` | `10000` | ms | Zeit bis Sender als offline gilt |
+| `TELEGRAM_INTERVAL_MS` | `3000` | ms | Abfrage-Intervall Telegram-Bot |
+| `BLINK_INTERVAL_MS` | `500` | ms | Blinkfrequenz bei Offline-Status |
+
+**Webserver**
+
+| Parameter | Wert | Beschreibung |
+|-----------|------|-------------|
+| Port | `80` | HTTP-Port für Web-Dashboard |
+| Auto-Refresh | `10` Sekunden | Dashboard aktualisiert sich automatisch |
+| Design | Dark Mode | Dunkles Design mit Accent-Farben |
+
+**Telegram Bot**
+
+| Befehl | Funktion | Antwort |
+|--------|----------|--------|
+| `/info` | Aktuelle Daten anzeigen | Temperatur, Druck, Magnetstatus, Zeit |
+| `/start` | Bot initialisieren | Willkommensnachricht + verfügbare Befehle |
+
 
 ### Datenflussbeschreibung
 
