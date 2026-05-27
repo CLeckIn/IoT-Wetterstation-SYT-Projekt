@@ -244,7 +244,7 @@ Mit /info werden die Daten der Wetterstation angezeigt.
 
 **Projekt Aufbau**
 
-![Hardware](images/hardware_photo.jfif)
+![Hardware](images/hardware_photo.png)
 
 ## 5. Zusammenfassung
 
