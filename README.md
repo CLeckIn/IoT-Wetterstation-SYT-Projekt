@@ -232,7 +232,7 @@ Die *WiFiManager*-Bibliothek (by tzapu) ermöglicht es, WLAN-Zugangsdaten ohne H
     
 **Dashboard-Screenshot:**
 
-![Dashboard](images/dashboard_screenshot.png)  
+![Dashboard](images/Dashboard.png)  
 
 Im Dashboard kann man die Messwerte sehen und die beiden Status-LED's ein- und auschalten.
 
@@ -244,7 +244,7 @@ Mit /info werden die Daten der Wetterstation angezeigt.
 
 **Projekt Aufbau**
 
-![Hardware](images/hardware_photo.jpg)
+![Hardware](images/hardware_photo.jfif)
 
 ## 5. Zusammenfassung
 
