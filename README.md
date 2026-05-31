@@ -220,7 +220,7 @@ Die *WiFiManager*-Bibliothek (by tzapu) ermöglicht es, WLAN-Zugangsdaten ohne H
 | `/t1` | LED 1 umschalten (Toggle) |
 | `/t2` | LED 2 umschalten (Toggle) |
 
-**Neue Features – Tracking und Monitoring**
+**Tracking und Monitoring**
 
 | Feature | Beschreibung | Anwendung |
 |---------|-------------|-----------|
