@@ -229,24 +229,6 @@ Die *WiFiManager*-Bibliothek (by tzapu) ermöglicht es, WLAN-Zugangsdaten ohne H
 | **Dynamischer Tab-Titel** | Browser-Tab zeigt "✅ System OK" oder "⚠️ MAGNET ALARM" | Schnell erkennbarer Status im Browser |
 | **Fern-Reset** (`/reset`) | Telegram-Befehl zum Zurücksetzen von Min/Max/Paketanzahl | Remote-Verwaltung ohne Neustart |
 
-### Datenflussbeschreibung
-
-```
-[BMP280 / LM393]
-      │
-      ▼
-[Sender ESP32] ──ESP-NOW (Kanal 11)──► [Empfänger ESP32]
-                                             │
-                     ┌──────────────────────┼──────────────────────┐
-                     ▼                      ▼                      ▼
-               [Webserver]            [Telegram Bot]           [RGB LEDs]
-                (Port 80)              (/info, /reset)         (Status)
-                  │
-                  ├─► /api/data
-                  ├─► /api/data/temperature
-                  └─► /api/data/sensor
-```
-
 ### Bilder und Schaltungen
 
 **Schaltplan**
