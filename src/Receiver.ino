@@ -83,7 +83,7 @@ void updateLEDs() {
   if (!led2Active) {
     digitalWrite(L2_R, LOW); digitalWrite(L2_B, LOW);
   } else {
-    if (millis() - lastRx > 70000 && lastRx != 0) {
+    if (millis() - lastRx > 25000 && lastRx != 0) {
       digitalWrite(L2_R, (millis() / 500) % 2); digitalWrite(L2_B, LOW);
     } else {
       if (incomingData.temp > 28.0) { digitalWrite(L2_R, HIGH); digitalWrite(L2_B, LOW); } 
