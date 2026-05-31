@@ -121,7 +121,7 @@ Die *WiFiManager*-Bibliothek (by tzapu) ermöglicht es, WLAN-Zugangsdaten ohne H
    Gib deine WLAN-Daten ein. (Name des WLAN's und das dazugehörige passwort).
 
 10. **Dashboard aufrufen**  
-    Öffne im Browser die IP-Adresse des Empfängers (z. B. `http://192.168.1.42`).
+    Öffne im Browser die IP-Adresse des Empfängers (z. B. `http://192.168.4.1`).
 
 ### Code
 
