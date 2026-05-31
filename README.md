@@ -6,7 +6,7 @@ Datum: **27.06.2026**
 
 ## 1. Einführung
 
-Dieses Projekt entstand im Rahmen des SYT-Unterrichts (Systemtechnik) und demonstriert eine vollständige IoT-Anwendung mit zwei ESP32-Mikrocontrollern. Ziel war es, ein eingebettetes System zu entwickeln, das Sensordaten kabellos überträgt, visuell anzeigt und über mehrere Schnittstellen (Webseite, Telegram) abrufbar macht.
+Dieses Projekt entstand im Rahmen des SYT-Unterrichts (Systemtechnik) und demonstriert eine vollständige IoT-Anwendung mit zwei ESP32-Mikrocontrollern. Ziel war es, ein eingebettetes System zu entwickeln, das Umweltdaten (Temperatur, Luftdruck) und Sicherheitsdaten (Magnetfeld-Erkennung) erfasst und über ein webbasiertes Dashboard sowie einen Telegram-Bot anzeigt.
 
 ## 2. Projektbeschreibung
 
@@ -32,14 +32,17 @@ typedef struct struct_message {
 * Verbindet sich mit WLAN (Auto-Konfiguration via **WiFiManager**)
 * Synchronisiert die Uhrzeit per **NTP**
 * Betreibt ein **Web-Dashboard** (Port 80)
-* Unterstützt einen **Telegram-Bot** (`/info`-Befehl)
+* Bietet **REST-API-Endpoints** zur Datenabfrage
+* Unterstützt einen **Telegram-Bot** (`/info`-Befehl und weitere Befehle)
 * Steuert **zwei RGB-LEDs** zur Statusanzeige
+* **Tracking**: Zählt empfangene Pakete und zeigt Systemlaufzeit
+* **Dynamischer Browser-Tab-Titel**: Zeigt System-Status im Tab an
 
 ## 3. Theorie
 
 ### ESP-NOW
 
-ESP-NOW ist ein von Espressif entwickeltes Peer-to-Peer-Kommunikationsprotokoll für ESP8266 und ESP32. Es ermöglicht die direkte Datenübertragung zwischen zwei Geräten ohne einen WLAN-Router. Die Übertragung erfolgt auf dem 2,4-GHz-Band.
+ESP-NOW ist ein von Espressif entwickeltes Peer-to-Peer-Kommunikationsprotokoll für ESP8266 und ESP32. Es ermöglicht die direkte Datenübertragung zwischen zwei Geräten ohne einen WLAN-Router.
 
 Vorteile gegenüber klassischem WiFi:
 - Sehr geringe Latenz (< 10 ms)
@@ -49,15 +52,15 @@ Vorteile gegenüber klassischem WiFi:
 
 ### BMP280
 
-Der *Bosch BMP280* ist ein digitaler Umgebungssensor, der Temperatur (−40 bis +85 °C) und absolute Luftdruck (300–1100 hPa) misst. Die Kommunikation erfolgt über I²C oder SPI. Im Projekt wird die I²C-Variante mit der Adafruit-Bibliothek verwendet.
+Der *Bosch BMP280* ist ein digitaler Umgebungssensor, der Temperatur (−40 bis +85 °C) und absolute Luftdruck (300–1100 hPa) misst. Die Kommunikation erfolgt über I²C oder SPI. Im Projekt wird der Sensor über I²C ausgelesen.
 
 ### LM393 Hallsensor
 
-Das LM393-Modul enthält einen Halleffekt-Sensor und einen Komparatorchip. Der Digitalausgang (DO) wechselt auf LOW, sobald ein Magnet in die Nähe des Sensors gebracht wird. Damit lässt sich z. B. das Öffnen und Schließen einer Tür oder eines Fensters erkennen.
+Das LM393-Modul enthält einen Halleffekt-Sensor und einen Komparatorchip. Der Digitalausgang (DO) wechselt auf LOW, sobald ein Magnet in die Nähe des Sensors gebracht wird. Damit lässt sich z.B. die Öffnung einer Tür oder das Vorhandensein eines Magnetfelds detektieren.
 
 ### WiFiManager
 
-Die *WiFiManager*-Bibliothek (by tzapu) ermöglicht es, WLAN-Zugangsdaten ohne Hardcodierung zu konfigurieren. Bei der ersten Inbetriebnahme (oder wenn das gespeicherte Netzwerk nicht erreichbar ist) öffnet der ESP32 einen eigenen WLAN-Accesspoint mit einem Konfigurationsportal. Der Nutzer verbindet sich damit und gibt die Zugangsdaten ein.
+Die *WiFiManager*-Bibliothek (by tzapu) ermöglicht es, WLAN-Zugangsdaten ohne Hardcodierung zu konfigurieren. Bei der ersten Inbetriebnahme (oder wenn das gespeicherte Netzwerk nicht erreichbar ist) öffnet sich ein Access Point, über den die Verbindungsdaten eingegeben werden können.
 
 ### LED 1 – Magnetstatus
 
@@ -118,7 +121,7 @@ Die *WiFiManager*-Bibliothek (by tzapu) ermöglicht es, WLAN-Zugangsdaten ohne H
    Gib deine WLAN-Daten ein. (Name des WLAN's und das dazugehörige passwort).
 
 10. **Dashboard aufrufen**  
-   Öffne im Browser die IP-Adresse des Empfängers (z. B. `http://192.168.1.42`).
+    Öffne im Browser die IP-Adresse des Empfängers (z. B. `http://192.168.1.42`).
 
 ### Code
 
@@ -151,7 +154,11 @@ Die *WiFiManager*-Bibliothek (by tzapu) ermöglicht es, WLAN-Zugangsdaten ohne H
 | `OnDataRecv()`         | ESP-NOW Callback – kopiert Daten in incomingData und setzt Zeitstempel       |
 | `handleRoot()`         | Erzeugt dynamisches HTML-Dashboard mit aktuellen Sensordaten                 |
 | `updateLEDs()`         | Setzt LED 1 und LED 2 basierend auf Magnet- und Temperaturstatus             |
-| `handleNewMessages()`  | Verarbeitet `/info`-Befehle des Telegram-Bots                                |
+| `handleNewMessages()`  | Verarbeitet Telegram-Befehle                                                 |
+| `handleApiData()`      | REST-API Endpoint für alle Daten (JSON)                                      |
+| `handleApiTemperature()` | REST-API Endpoint für Temperatur-Min/Max (JSON)                              |
+| `handleApiSensor()`    | REST-API Endpoint für Sensor- und Paketdaten (JSON)                          |
+| `getUptime()`          | Berechnet und formatiert die Systemlaufzeit                                  |
 | `loop()`               | Abarbeiten von Webserver, LED-Update und Telegram-Abfrage                    |
 
 **Wichtige Robustheits-Maßnahme:** Der Empfänger nutzt einen Timeout von 30 Sekunden. Da der Sender alle 15 Sekunden sendet, wird so ein Ausfall sicher erkannt.
@@ -186,13 +193,41 @@ Die *WiFiManager*-Bibliothek (by tzapu) ermöglicht es, WLAN-Zugangsdaten ohne H
 | Port | `80` | HTTP-Port für Web-Dashboard |
 | Auto-Refresh | `5` Sekunden | Dashboard aktualisiert sich automatisch |
 
-**Telegram Bot**
+**Telegram Bot – Befehle**
 
 | Befehl | Funktion | Antwort |
 |--------|----------|--------|
-| `/info` | Aktuelle Daten anzeigen | Temperatur, Druck, Magnetstatus, Zeit |
+| `/info` | Aktuelle Daten anzeigen | Temperatur, Druck, Magnetstatus, Zeit, Min/Max, Uptime, Paketanzahl |
 | `/start` | Bot initialisieren | Willkommensnachricht |
+| `/reset` | Statistiken zurücksetzen | Bestätigung der Rückstellung (Min/Max/Pakete auf 0) |
+| `/led1_on` | LED 1 einschalten | Bestätigung |
+| `/led1_off` | LED 1 ausschalten | Bestätigung |
+| `/led2_on` | LED 2 einschalten | Bestätigung |
+| `/led2_off` | LED 2 ausschalten | Bestätigung |
 
+**REST-API Endpoints (JSON)**
+
+| Endpoint | Methode | Rückgabe | Beschreibung |
+|----------|---------|----------|-------------|
+| `/api/data` | GET | Alle Sensordaten | Zeitstempel, Temperatur, Min/Max, Druck, Magnet, Paketanzahl, Uptime |
+| `/api/data/temperature` | GET | Temperatur-Daten | Aktuelle Temperatur, Min/Max-Werte |
+| `/api/data/sensor` | GET | Sensor-Status | Magnetstatus (0/1), Paketanzahl |
+
+**Webserver-Steuerung (Dashboard-Buttons)**
+
+| Route | Funktion |
+|-------|----------|
+| `/t1` | LED 1 umschalten (Toggle) |
+| `/t2` | LED 2 umschalten (Toggle) |
+
+**Neue Features – Tracking und Monitoring**
+
+| Feature | Beschreibung | Anwendung |
+|---------|-------------|-----------|
+| **Paketzähler** (`packetCount`) | Zählt alle empfangenen Datenpakete | Im Dashboard, API, Telegram `/info` |
+| **Systemlaufzeit** (`getUptime()`) | Zeigt Stunden:Minuten:Sekunden seit Start | Im Dashboard und Telegram-Reports |
+| **Dynamischer Tab-Titel** | Browser-Tab zeigt "✅ System OK" oder "⚠️ MAGNET ALARM" | Schnell erkennbarer Status im Browser |
+| **Fern-Reset** (`/reset`) | Telegram-Befehl zum Zurücksetzen von Min/Max/Paketanzahl | Remote-Verwaltung ohne Neustart |
 
 ### Datenflussbeschreibung
 
@@ -201,14 +236,15 @@ Die *WiFiManager*-Bibliothek (by tzapu) ermöglicht es, WLAN-Zugangsdaten ohne H
       │
       ▼
 [Sender ESP32] ──ESP-NOW (Kanal 11)──► [Empfänger ESP32]
-                                               │
-                    ┌──────────────────────────┼──────────────────────────┐
-                    ▼                          ▼                          ▼
-              [Webserver]                [Telegram Bot]               [RGB LEDs]
-                (Port 80)                  (/info)                    (Status)
-                    
-                    
-            
+                                             │
+                     ┌──────────────────────┼──────────────────────┐
+                     ▼                      ▼                      ▼
+               [Webserver]            [Telegram Bot]           [RGB LEDs]
+                (Port 80)              (/info, /reset)         (Status)
+                  │
+                  ├─► /api/data
+                  ├─► /api/data/temperature
+                  └─► /api/data/sensor
 ```
 
 ### Bilder und Schaltungen
@@ -218,13 +254,13 @@ Die *WiFiManager*-Bibliothek (by tzapu) ermöglicht es, WLAN-Zugangsdaten ohne H
 ![Schaltplan der IoT-Wetterstation](./images/Schaltplan.png)
 
 1. Sender-Station 
-    An der Sender-Station wurden die Sensoren zur Erfassung der Umwelt- und Sicherheitsdaten angebunden. Da die Pins auf der rechten Seite des ESP32 durch das Breadboard verdeckt sind, wurde die gesamte Beschaltung auf die **linke Pin-Leiste** verlegt.
+    An der Sender-Station wurden die Sensoren zur Erfassung der Umwelt- und Sicherheitsdaten angebunden. Da die Pins auf der rechten Seite des ESP32 durch das Breadboard verdeckt sind, wurde die Verkabelung optimiert.
     
-    *   **BMP280 (Umweltsensor):** Die Kommunikation erfolgt über den I2C-Bus. Hierbei wurde der Daten-Pin (SDA) an **GPIO 32** und der Takt-Pin (SCL) an **GPIO 33** angeschlossen. Die Spannungsversorgung erfolgt über den **3V3-Pin** des Mikrocontrollers.
-    *   **Hall-Sensor (Magnetfeld-Simulation):** Zur Simulation des Magnetsensors wurde ein Schalter verwendet, der an **GPIO 34** angeschlossen ist. Das Modul liefert ein digitales Signal, welches vom ESP32 im Modus `INPUT_PULLUP` ausgewertet wird.
+    *   **BMP280 (Umweltsensor):** Die Kommunikation erfolgt über den I2C-Bus. Hierbei wurde der Daten-Pin (SDA) an **GPIO 32** und der Takt-Pin (SCL) an **GPIO 33** angeschlossen. Die Spannungsversorgung erfolgt über die 3,3V- und GND-Leitungen.
+    *   **Hall-Sensor (Magnetfeld-Simulation):** Zur Simulation des Magnetsensors wurde ein Schalter verwendet, der an **GPIO 34** angeschlossen ist. Das Modul liefert ein digitales Signal, welches durch `digitalRead()` abgefragt wird.
 
 2. Empfänger-Station 
-    Die Empfänger-Station dient als Gateway und stellt die empfangenen Daten visuell dar. Hierzu wurden zwei RGB-LEDs (Common Cathode) mit entsprechenden Vorwiderständen (220 Ω) integriert, die ebenfalls an der **linken Pin-Leiste** angeschlossen sind:
+    Die Empfänger-Station dient als Gateway und stellt die empfangenen Daten visuell dar. Hierzu wurden zwei RGB-LEDs (Common Cathode) mit entsprechenden Vorwiderständen (220 Ω) integriert, die den Magnet- und Systemstatus anzeigen.
     
     *   **LED 1 (Magnet-Status):** Diese LED signalisiert den Zustand des Hall-Sensors am Sender. Sie ist an den Pins **GPIO 25 (Rot)** und **GPIO 26 (Grün)** angebunden.
     *   **LED 2 (System-Status):** Zur Anzeige der Temperaturwarnungen und Kommunikationsfehler wurden die Pins **GPIO 13 (Rot)** und **GPIO 14 (Blau)** verwendet. 
@@ -234,13 +270,13 @@ Die *WiFiManager*-Bibliothek (by tzapu) ermöglicht es, WLAN-Zugangsdaten ohne H
 
 ![Dashboard](images/Dashboard.png)  
 
-Im Dashboard kann man die Messwerte sehen und die beiden Status-LED's ein- und auschalten.
+Im Dashboard kann man die Messwerte sehen, Paketzähler und Uptime beobachten, sowie die beiden Status-LED's ein- und auschalten.
 
 **Telegram-Screenshot:** 
 
 ![Telegram](images/telegram.png)
 
-Mit /info werden die Daten der Wetterstation angezeigt.
+Mit `/info` werden die Daten der Wetterstation angezeigt. Zusätzlich können über `/reset` Statistiken zurückgesetzt und mit `/led1_on`, `/led1_off`, `/led2_on`, `/led2_off` die LEDs ferngesteuert werden.
 
 **Projekt Aufbau**
 
@@ -248,14 +284,17 @@ Mit /info werden die Daten der Wetterstation angezeigt.
 
 ## 5. Zusammenfassung
 
-In diesem Projekt wurde eine vollständige IoT-Wetterstation mit zwei ESP32-Mikrocontrollern entwickelt. Der Sender erfasst Temperatur, Luftdruck und Magnetstatus und überträgt die Daten drahtlos per ESP-NOW. Der Empfänger verarbeitet die Daten, stellt sie über ein Web-Dashboard bereit, ermöglicht Telegram-Abfragen und zeigt den Systemstatus über RGB-LEDs an.
+In diesem Projekt wurde eine vollständige IoT-Wetterstation mit zwei ESP32-Mikrocontrollern entwickelt. Der Sender erfasst Temperatur, Luftdruck und Magnetstatus und überträgt die Daten drahtlos an den Empfänger. Dieser verarbeitet die Daten, zeigt sie in einem ansprechenden Web-Dashboard und über einen Telegram-Bot an und steuert LEDs zur visuellen Statusanzeige.
 
 Das Projekt demonstriert praxisrelevante Konzepte der eingebetteten Systemtechnik:
 - Drahtlose Kommunikation (ESP-NOW)
 - Sensorintegration (I²C, Digital-I/O)
 - Netzwerkdienste (WiFi, NTP, HTTP)
+- Webserver und REST-API (JSON)
 - Sichere Konfigurationsverwaltung (Secrets-Datei, .gitignore)
 - Robuste Fehlerbehandlung (Paketgrößenvalidierung, Plausibilitätsprüfung)
+- Monitoring und Tracking (Paketzähler, Uptime)
+- Fernsteuerung via Telegram-Bot
 
 ## 6. Quellen
 
